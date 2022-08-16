@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
 using UnityEngine.InputSystem;
@@ -10,7 +11,7 @@ using UnityEngine.InputSystem;
 namespace StarterAssets
 {
 	[RequireComponent(typeof(CharacterController))]
-	[RequireComponent(typeof(SphereCollider))]
+	[RequireComponent(typeof(CapsuleCollider))]
 	[RequireComponent(typeof(Rigidbody))]
 	public class ThirdPersonController : MonoBehaviour
 	{
@@ -62,6 +63,8 @@ namespace StarterAssets
 		public float FallTimeout = 0.15f;
 		[Tooltip("Time required to pass between toggling roll state. Gives time for any animation to occur")]
 		public float RollTimeout = 0.50f;
+		[Tooltip("How long it takes to exit the roll state")]
+		public float RollExitTime = 0.25f;
 
 		[Header("Player Grounded")]
 		[Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
@@ -115,13 +118,14 @@ namespace StarterAssets
 		private Animator _animator;
 		private CharacterController _controller;
 		private GameObject _mainCamera;
-		private SphereCollider _collider;
+		private CapsuleCollider _collider;
 		private Rigidbody _rb;
 		private Vector3 _horizontalSpeed;
 
 		private const float _threshold = 0.01f;
 
 		private bool _hasAnimator;
+		private bool _canMove;
 
 		private void Awake()
 		{
@@ -136,26 +140,33 @@ namespace StarterAssets
 		{
 			_hasAnimator = TryGetComponent(out _animator);
 			_controller = GetComponent<CharacterController>();
-			_collider = GetComponent<SphereCollider>();
+			_collider = GetComponent<CapsuleCollider>();
 			_rb = GetComponent<Rigidbody>();
 
 			_collider.radius = PlayerHeadRadius;
+			_collider.height = 0;
 			_collider.enabled = false;
 			_rb.detectCollisions = false;
+
+			_canMove = true;
 
 			AssignAnimationIDs();
 
 			// reset our timeouts on start
 			_jumpTimeoutDelta = JumpTimeout;
 			_fallTimeoutDelta = FallTimeout;
+			_rollTimeoutDelta = RollTimeout;
 		}
 
 		private void Update()
 		{
-			RollCheck();
-			JumpAndGravity();
-			GroundedCheck();
-			Move();
+			if(_canMove)
+			{
+				RollCheck();
+				JumpAndGravity();
+				GroundedCheck();
+				Move();
+			}
 		}
 
 		private void LateUpdate()
@@ -174,40 +185,40 @@ namespace StarterAssets
 
 		private void RollCheck()
 		{
-			// Toggle roll state
+			// If roll is pressed and the timeout timer is done
 			if (InputScript.roll && _rollTimeoutDelta <= 0.0f)
 			{
 				// Reset roll timer
 				_rollTimeoutDelta = RollTimeout;
-				
-				// Flip the roll state
-				IsRolling = !IsRolling;
 
-				// If we are entering the rolling state
-				if(IsRolling)
-				{
-					// Transfer all velocity into the rigidbody
-					_rb.velocity = _controller.velocity;
+                if (IsRolling)
+                {
+                	// If we are currently rolling, exit roll mode
+					StartCoroutine(ExitRollRoutine());
+                }
+                else
+                {
+                	// If we are not currently rolling, enter roll mode
+                    IsRolling = true;
 
-					foreach(GameObject model in BodyParts)
-					{
-						model.SetActive(false);
-					}
-				}
-				else
-				{
-					_rb.velocity = Vector3.zero;
-					_rb.angularVelocity = Vector3.zero;
+                    // Transfer all velocity into the rigidbody
+                    _rb.velocity = _controller.velocity;
 
-					foreach(GameObject model in BodyParts)
-					{
-						model.SetActive(true);
-					}
-				}
+					// Disable the ghost body
+                    foreach (GameObject model in BodyParts)
+                    {
+                        model.SetActive(false);
+                    }
 
-				_rb.detectCollisions = IsRolling;
-				_controller.enabled = !IsRolling;
-				_collider.enabled = true;
+					// Swap from character controller to rigidbody
+					_rb.detectCollisions = true;
+					_collider.enabled = true;
+					_controller.enabled = false;
+
+					// Set the collider to be a sphere
+					_collider.height = PlayerHeadRadius * 2;
+					_collider.center = new Vector3(0, PlayerHeadRadius * 2, 0);
+                }
 			}
 
 			// roll timeout
@@ -314,7 +325,6 @@ namespace StarterAssets
 				float xAccel = Mathf.Min(speedChangeRate, _horizontalSpeed.x -_rb.velocity.x);
 				float yAccel = _verticalVelocity -_rb.velocity.y;
 				float zAccel = Mathf.Min(speedChangeRate, _horizontalSpeed.z -_rb.velocity.z);
-				Debug.Log(new Vector3(xAccel, yAccel, zAccel));
 				_rb.AddForce(new Vector3(xAccel, yAccel, zAccel), ForceMode.Acceleration);
 			}
 			else
@@ -430,6 +440,65 @@ namespace StarterAssets
 
 			_horizontalSpeed = new Vector3(_rb.velocity.x, 0, _rb.velocity.z);
 			_verticalVelocity = _rb.velocity.y;
+		}
+
+		private IEnumerator ExitRollRoutine()
+		{
+			_canMove = false;
+			float progress = 0;
+
+			// Grab the current rotation
+			Quaternion originalRotation = transform.rotation;
+
+			// Create an upright, forwards rotation
+			Vector3 lookDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
+			Quaternion targetRotation = Quaternion.LookRotation(lookDirection, Vector3.up);
+
+			// Rotate to the upright position slowly
+			while(progress < 1)
+			{
+				// Stop the rigidbody from doing anything
+				_rb.velocity = Vector3.zero;
+				_rb.angularVelocity = Vector3.zero;
+
+				// Increase progress based on how far we are through the roll timer
+				progress += Time.deltaTime / RollExitTime;
+
+				// Expand the collider from sphere to capsule
+				_collider.height = Mathf.Lerp(PlayerHeadRadius * 2, _controller.height, progress);
+				_collider.center = new Vector3(0, Mathf.Lerp(PlayerHeadRadius * 2, _controller.center.y, progress), 0);
+
+				// Transition the rotation toward the target
+				Quaternion oldRotation = transform.rotation;
+				Quaternion newRotation = Quaternion.Lerp(originalRotation, targetRotation, progress);
+
+				// Transition the player's position to the new position
+				Vector3 oldOffset = PlayerHead.transform.position - transform.position;
+				Vector3 newOffset = newRotation * Quaternion.Inverse(oldRotation) * oldOffset;
+
+				// Update the position and rotation
+				Vector3 axis = Vector3.Cross(oldOffset, newOffset);
+				float angle = Vector3.Angle(oldOffset, newOffset);
+				transform.RotateAround(PlayerHead.transform.position, axis, angle);
+
+				yield return null;
+			}
+
+			// Enable the model
+			foreach (GameObject model in BodyParts)
+			{
+				model.SetActive(true);
+			}
+
+
+			// Swap from rigidbody to character controller
+			_rb.detectCollisions = false;
+			_collider.enabled = false;
+			_controller.enabled = true;
+
+			// Finally exit roll mode
+			IsRolling = false;
+			_canMove = true;
 		}
 	}
 }

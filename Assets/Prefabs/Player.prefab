@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 4313470006470053243}
   - component: {fileID: 4923491595305467664}
   - component: {fileID: 226366593604980644}
-  - component: {fileID: 4923491595305467665}
+  - component: {fileID: 6812820357998572095}
   m_Layer: 8
   m_Name: Player
   m_TagString: Player
@@ -115,6 +115,7 @@ MonoBehaviour:
   JumpTimeout: 0
   FallTimeout: 0.15
   RollTimeout: 0.5
+  RollExitTime: 0.15
   Grounded: 1
   GroundedOffset: -0.14
   GroundedRadius: 0.28
@@ -163,8 +164,8 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 1
---- !u!135 &4923491595305467665
-SphereCollider:
+--- !u!136 &6812820357998572095
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -173,8 +174,9 @@ SphereCollider:
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 0
-  serializedVersion: 2
   m_Radius: 0.5
+  m_Height: 0
+  m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
 --- !u!1 &8442733247385236523
 GameObject:
