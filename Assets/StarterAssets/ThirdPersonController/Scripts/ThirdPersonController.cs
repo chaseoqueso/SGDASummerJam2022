@@ -73,6 +73,10 @@ namespace StarterAssets
 		public float GroundedOffset = -0.14f;
 		[Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
 		public float GroundedRadius = 0.28f;
+		[Tooltip("The offset while rolling")]
+		public float RollingGroundedOffset = -0.14f;
+		[Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
+		public float RollingGroundedRadius = 0.28f;
 		[Tooltip("What layers the character uses as ground")]
 		public LayerMask GroundLayers;
 
@@ -188,11 +192,26 @@ namespace StarterAssets
 			// If roll is pressed and the timeout timer is done
 			if (InputScript.roll && _rollTimeoutDelta <= 0.0f)
 			{
-				// Reset roll timer
-				_rollTimeoutDelta = RollTimeout;
-
                 if (IsRolling)
                 {
+					// Make sure we have enough space to get bigger
+					RaycastHit hit;
+					if(Physics.Raycast(PlayerHead.transform.position, Vector3.down, out hit, _controller.height, GroundLayers))
+					{
+						Vector3 bottomPoint = hit.point + Vector3.up * 0.05f;
+						Collider[] hits = Physics.OverlapCapsule(bottomPoint + (Vector3.up * _controller.radius), 
+																 bottomPoint + (Vector3.up * _controller.height) - (Vector3.up * _controller.radius), 
+																 _controller.radius, 
+																 GroundLayers);
+						
+						if(hits.Length != 0)
+						{
+							// We don't fit so don't proceed to the rest of the method
+							InputScript.roll = false;
+							return;
+						}
+					}
+
                 	// If we are currently rolling, exit roll mode
 					StartCoroutine(ExitRollRoutine());
                 }
@@ -219,6 +238,9 @@ namespace StarterAssets
 					_collider.height = PlayerHeadRadius * 2;
 					_collider.center = new Vector3(0, PlayerHeadRadius * 2, 0);
                 }
+
+				// Reset roll timer
+				_rollTimeoutDelta = RollTimeout;
 			}
 
 			// roll timeout
@@ -233,16 +255,19 @@ namespace StarterAssets
 		{
 			// set sphere position, with offset
 			Vector3 spherePosition;
+			float radius;
 			if(IsRolling)
 			{
-				spherePosition = new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - PlayerHeadRadius - GroundedOffset, PlayerHead.transform.position.z);
+				radius = RollingGroundedRadius;
+				spherePosition = new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - PlayerHeadRadius - RollingGroundedOffset, PlayerHead.transform.position.z);
 			}
 			else
 			{
+				radius = GroundedRadius;
 				spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
 			}
 			
-			Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
+			Grounded = Physics.CheckSphere(spherePosition, radius, GroundLayers, QueryTriggerInteraction.Ignore);
 
 			// update animator if using character
 			if (_hasAnimator)
@@ -322,10 +347,12 @@ namespace StarterAssets
 			// move the player
 			if(IsRolling)
 			{
-				float xAccel = Mathf.Min(speedChangeRate, _horizontalSpeed.x -_rb.velocity.x);
-				float yAccel = _verticalVelocity -_rb.velocity.y;
-				float zAccel = Mathf.Min(speedChangeRate, _horizontalSpeed.z -_rb.velocity.z);
-				_rb.AddForce(new Vector3(xAccel, yAccel, zAccel), ForceMode.Acceleration);
+				// float xAccel = Mathf.Min(speedChangeRate, _horizontalSpeed.x -_rb.velocity.x);
+				// float yAccel = _verticalVelocity -_rb.velocity.y;
+				// float zAccel = Mathf.Min(speedChangeRate, _horizontalSpeed.z -_rb.velocity.z);
+				// _rb.AddForce(new Vector3(xAccel, yAccel, zAccel), ForceMode.Acceleration);
+
+				_rb.velocity = _horizontalSpeed + new Vector3(0.0f, _verticalVelocity, 0.0f);
 			}
 			else
 			{
@@ -431,7 +458,14 @@ namespace StarterAssets
 			else Gizmos.color = transparentRed;
 			
 			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
-			Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
+			if(IsRolling)
+			{
+				Gizmos.DrawSphere(new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - PlayerHeadRadius - RollingGroundedOffset, PlayerHead.transform.position.z), RollingGroundedRadius);
+			}
+			else
+			{
+				Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
+			}
 		}
 
 		void OnCollisionEnter(Collision collision)

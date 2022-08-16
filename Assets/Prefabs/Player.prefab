@@ -105,20 +105,22 @@ MonoBehaviour:
   MoveSpeed: 8
   SpeedChangeRate: 30
   RollSpeed: 13
-  RollingSpeedChangeRate: 25
+  RollingSpeedChangeRate: 20
   PlayerHead: {fileID: 2406775303628015353}
   PlayerHeadRadius: 0.5
   IsRolling: 0
   JumpHeight: 2
-  Gravity: -30
+  Gravity: -25
   AerialSpeedChangeRate: 15
   JumpTimeout: 0
   FallTimeout: 0.15
   RollTimeout: 0.5
   RollExitTime: 0.15
   Grounded: 1
-  GroundedOffset: -0.14
-  GroundedRadius: 0.28
+  GroundedOffset: -0.45
+  GroundedRadius: 0.5
+  RollingGroundedOffset: -0.37
+  RollingGroundedRadius: 0.4
   GroundLayers:
     serializedVersion: 2
     m_Bits: 513
