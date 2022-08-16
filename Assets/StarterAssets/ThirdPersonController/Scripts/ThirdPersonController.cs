@@ -22,18 +22,18 @@ namespace StarterAssets
 		[Header("Player")]
 		[Tooltip("Move speed of the character in m/s")]
 		public float MoveSpeed = 2.0f;
-		[Tooltip("How fast the character turns to face movement direction")]
-		[Range(0.0f, 0.3f)]
-		public float RotationSmoothTime = 0.12f;
+		// [Tooltip("How fast the character turns to face movement direction")]
+		// [Range(0.0f, 0.3f)]
+		// public float RotationSmoothTime = 0.12f;
 		[Tooltip("Acceleration and deceleration")]
 		public float SpeedChangeRate = 10.0f;
 		
 		[Space(10)]
 		[Tooltip("Rolling speed of the character in m/s")]
 		public float RollSpeed = 2.0f;
-		[Tooltip("How fast the character turns to face movement direction while rolling")]
-		[Range(0.0f, 0.3f)]
-		public float RollingRotationSmoothTime = 0.06f;
+		// [Tooltip("How fast the character turns to face movement direction while rolling")]
+		// [Range(0.0f, 0.3f)]
+		// public float RollingRotationSmoothTime = 0.06f;
 		[Tooltip("Acceleration and deceleration while rolling")]
 		public float RollingSpeedChangeRate = 6.0f;
 		[Tooltip("The player's head object")]
@@ -48,9 +48,9 @@ namespace StarterAssets
 		public float JumpHeight = 1.2f;
 		[Tooltip("The character uses its own gravity value. The engine default is -9.81f")]
 		public float Gravity = -15.0f;
-		[Tooltip("How fast the character turns to face movement direction in midair")]
-		[Range(0.0f, 0.3f)]
-		public float AerialRotationSmoothTime = 0.03f;
+		// [Tooltip("How fast the character turns to face movement direction in midair")]
+		// [Range(0.0f, 0.3f)]
+		// public float AerialRotationSmoothTime = 0.03f;
 		[Tooltip("Acceleration and deceleration in midair")]
 		public float AerialSpeedChangeRate = 3.0f;
 
@@ -270,7 +270,7 @@ namespace StarterAssets
 			float inputMagnitude = InputScript.analogMovement ? InputScript.move.magnitude : 1f;
 
 			float speedChangeRate = Grounded ? (IsRolling ? RollingSpeedChangeRate : SpeedChangeRate) : AerialSpeedChangeRate;
-			float rotationSmoothSpeed = Grounded ? (IsRolling ? RollingRotationSmoothTime : RotationSmoothTime) : AerialRotationSmoothTime;
+			// float rotationSmoothSpeed = Grounded ? (IsRolling ? RollingRotationSmoothTime : RotationSmoothTime) : AerialRotationSmoothTime;
 
 			// move towards target input direction and magnitude
 			Vector3 input = new Vector3(InputScript.move.x, 0.0f, InputScript.move.y).normalized;
@@ -412,7 +412,7 @@ namespace StarterAssets
 		void OnCollisionEnter(Collision collision)
 		{
 			// This should resonably only be called while rolling
-			
+
 			_horizontalSpeed = new Vector3(_rb.velocity.x, 0, _rb.velocity.z);
 			_verticalVelocity = _rb.velocity.y;
 		}
