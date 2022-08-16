@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
 using UnityEngine.InputSystem;
 #endif
@@ -83,6 +84,10 @@ namespace StarterAssets
 		public float CameraAngleOverride = 0.0f;
 		[Tooltip("For locking the camera position on all axis")]
 		public bool LockCameraPosition = false;
+		
+		[Header("Model")]
+		[Tooltip("The parts of the model to disable while rolling")]
+		public List<GameObject> BodyParts;
 
 		// cinemachine
 		private float _cinemachineTargetYaw;
@@ -183,11 +188,21 @@ namespace StarterAssets
 				{
 					// Transfer all velocity into the rigidbody
 					_rb.velocity = _controller.velocity;
+
+					foreach(GameObject model in BodyParts)
+					{
+						model.SetActive(false);
+					}
 				}
 				else
 				{
 					_rb.velocity = Vector3.zero;
 					_rb.angularVelocity = Vector3.zero;
+
+					foreach(GameObject model in BodyParts)
+					{
+						model.SetActive(true);
+					}
 				}
 
 				_rb.detectCollisions = IsRolling;
