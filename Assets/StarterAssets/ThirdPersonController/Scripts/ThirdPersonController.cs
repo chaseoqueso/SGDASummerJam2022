@@ -24,18 +24,12 @@ namespace StarterAssets
 		[Header("Player")]
 		[Tooltip("Move speed of the character in m/s")]
 		public float MoveSpeed = 2.0f;
-		// [Tooltip("How fast the character turns to face movement direction")]
-		// [Range(0.0f, 0.3f)]
-		// public float RotationSmoothTime = 0.12f;
 		[Tooltip("Acceleration and deceleration")]
 		public float SpeedChangeRate = 10.0f;
 		
 		[Space(10)]
 		[Tooltip("Rolling speed of the character in m/s")]
 		public float RollSpeed = 2.0f;
-		// [Tooltip("How fast the character turns to face movement direction while rolling")]
-		// [Range(0.0f, 0.3f)]
-		// public float RollingRotationSmoothTime = 0.06f;
 		[Tooltip("Acceleration and deceleration while rolling")]
 		public float RollingSpeedChangeRate = 6.0f;
 		[Tooltip("The player's head object")]
@@ -50,9 +44,6 @@ namespace StarterAssets
 		public float JumpHeight = 1.2f;
 		[Tooltip("The character uses its own gravity value. The engine default is -9.81f")]
 		public float Gravity = -15.0f;
-		// [Tooltip("How fast the character turns to face movement direction in midair")]
-		// [Range(0.0f, 0.3f)]
-		// public float AerialRotationSmoothTime = 0.03f;
 		[Tooltip("Acceleration and deceleration in midair")]
 		public float AerialSpeedChangeRate = 3.0f;
 
@@ -347,12 +338,21 @@ namespace StarterAssets
 			// move the player
 			if(IsRolling)
 			{
-				// float xAccel = Mathf.Min(speedChangeRate, _horizontalSpeed.x -_rb.velocity.x);
-				// float yAccel = _verticalVelocity -_rb.velocity.y;
-				// float zAccel = Mathf.Min(speedChangeRate, _horizontalSpeed.z -_rb.velocity.z);
-				// _rb.AddForce(new Vector3(xAccel, yAccel, zAccel), ForceMode.Acceleration);
+				// Choose vertical speed based on if we're grounded or jumping or neither
+				Vector3 verticalSpeed;
+				if(Grounded && _verticalVelocity <= 0)
+				{
+					// Grounded
+					verticalSpeed = new Vector3(0.0f, _rb.velocity.y + Gravity * Time.deltaTime, 0.0f);
+				}
+				else
+				{
+					// Jumping or falling
+					verticalSpeed = new Vector3(0.0f, _verticalVelocity, 0.0f);
+				}
 
-				_rb.velocity = _horizontalSpeed + new Vector3(0.0f, _verticalVelocity, 0.0f);
+				// Apply the velocity to the rigidbody
+				_rb.velocity = _horizontalSpeed + verticalSpeed;
 			}
 			else
 			{
@@ -388,9 +388,16 @@ namespace StarterAssets
 				}
 
 				// stop our velocity dropping infinitely when grounded
-				if (_verticalVelocity < 0.0f)
+				if (_verticalVelocity < 0f)
 				{
-					_verticalVelocity = -2f;
+					if(IsRolling)
+					{
+						_verticalVelocity = 0;
+					}
+					else
+					{
+						_verticalVelocity = -500f;
+					}
 				}
 
 				// Jump
