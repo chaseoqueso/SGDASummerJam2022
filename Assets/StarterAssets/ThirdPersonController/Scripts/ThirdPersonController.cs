@@ -26,12 +26,16 @@ namespace StarterAssets
 		public float MoveSpeed = 2.0f;
 		[Tooltip("Acceleration and deceleration")]
 		public float SpeedChangeRate = 10.0f;
+		[Tooltip("The maximum allowed difference between the rigidbody's velocity and the intended velocity before we allow the rigidbody to take over.")]
+		public float MaxSpeedDiscrepancy = 1f;
 		
 		[Space(10)]
 		[Tooltip("Rolling speed of the character in m/s")]
 		public float RollSpeed = 2.0f;
 		[Tooltip("Acceleration and deceleration while rolling")]
 		public float RollingSpeedChangeRate = 6.0f;
+		[Tooltip("The rate to decay the bonus velocity acquired from rolling down hills.")]
+		public float BonusSpeedDecayRate = 2.0f;
 		[Tooltip("The player's head object")]
 		public GameObject PlayerHead;
 		[Tooltip("The radius of the player's head object")]
@@ -61,13 +65,13 @@ namespace StarterAssets
 		[Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
 		public bool Grounded = true;
 		[Tooltip("Useful for rough ground")]
-		public float GroundedOffset = -0.14f;
-		[Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
-		public float GroundedRadius = 0.28f;
-		[Tooltip("The offset while rolling")]
-		public float RollingGroundedOffset = -0.14f;
-		[Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
-		public float RollingGroundedRadius = 0.28f;
+		public float GroundedOffset = -0.25f;
+		[Tooltip("The radius of the grounded check. Should generally match the radius of the CharacterController")]
+		public float GroundedRadius = 0.5f;
+		[Tooltip("The distance to sphereCast while rolling")]
+		public float RollingGroundedDistance = 0.1f;
+		[Tooltip("The radius of the grounded check. Should generally match PlayerHeadRadius")]
+		public float RollingGroundedRadius = 0.5f;
 		[Tooltip("What layers the character uses as ground")]
 		public LayerMask GroundLayers;
 
@@ -115,7 +119,10 @@ namespace StarterAssets
 		private GameObject _mainCamera;
 		private CapsuleCollider _collider;
 		private Rigidbody _rb;
+		private Vector3 _previousPosition;
 		private Vector3 _horizontalSpeed;
+		private Vector3 _bonusVelocity;
+		private Vector3 _groundedNormal;
 
 		private const float _threshold = 0.01f;
 
@@ -155,12 +162,23 @@ namespace StarterAssets
 
 		private void Update()
 		{
-			if(_canMove)
+			if(_canMove && !IsRolling)
 			{
-				RollCheck();
-				JumpAndGravity();
-				GroundedCheck();
-				Move();
+				RollCheck(Time.deltaTime);
+				JumpAndGravity(Time.deltaTime);
+				GroundedCheck(Time.deltaTime);
+				Move(Time.deltaTime);
+			}
+		}
+
+		private void FixedUpdate()
+		{
+			if(_canMove && IsRolling)
+			{
+				RollCheck(Time.fixedDeltaTime);
+				JumpAndGravity(Time.fixedDeltaTime);
+				GroundedCheck(Time.fixedDeltaTime);
+				Move(Time.fixedDeltaTime);
 			}
 		}
 
@@ -178,7 +196,7 @@ namespace StarterAssets
 			_animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
 		}
 
-		private void RollCheck()
+		private void RollCheck(float timeStep)
 		{
 			// If roll is pressed and the timeout timer is done
 			if (InputScript.roll && _rollTimeoutDelta <= 0.0f)
@@ -205,6 +223,7 @@ namespace StarterAssets
 
                 	// If we are currently rolling, exit roll mode
 					StartCoroutine(ExitRollRoutine());
+					_bonusVelocity = Vector3.zero;
                 }
                 else
                 {
@@ -238,27 +257,68 @@ namespace StarterAssets
 			if (_rollTimeoutDelta >= 0.0f)
 			{
 				InputScript.roll = false;
-				_rollTimeoutDelta -= Time.deltaTime;
+				_rollTimeoutDelta -= timeStep;
 			}
 		}
 
-		private void GroundedCheck()
+		private void GroundedCheck(float timeStep)
 		{
-			// set sphere position, with offset
-			Vector3 spherePosition;
-			float radius;
+			// If rolling, use a sphereCast
 			if(IsRolling)
 			{
-				radius = RollingGroundedRadius;
-				spherePosition = new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - PlayerHeadRadius - RollingGroundedOffset, PlayerHead.transform.position.z);
+				RaycastHit hit;
+				if(Physics.SphereCast(PlayerHead.transform.position, RollingGroundedRadius, Vector3.down, out hit, RollingGroundedDistance, GroundLayers))
+				{
+					// Recast to get the actual surface normal
+                	hit.collider.Raycast(new Ray(hit.point + hit.normal * 0.01f, -hit.normal), out hit, 0.011f);
+
+					// Convert any downward force into forward velocity based on the slope
+					Vector3 downwardVelocity;
+
+					// If we're falling, use vertical velocity as the down vector
+					if(!Grounded)
+					{
+						downwardVelocity = Vector3.up * _verticalVelocity;
+					}
+					else
+					{
+						// Otherwise use gravity
+						downwardVelocity = Vector3.up * Gravity * timeStep;
+					}
+
+					// Get the component of the downward vector coplanar with the collision surface
+					Vector3 coplanarForce = Vector3.ProjectOnPlane(downwardVelocity, hit.normal);
+					_bonusVelocity += new Vector3(coplanarForce.x, 0, coplanarForce.z);
+
+					// Only consider this ground if it's within the slope limit
+					Grounded = Vector3.Angle(Vector3.up, hit.normal) < _controller.slopeLimit;
+
+					// Update the ground normal
+					if(Grounded)
+					{
+						_groundedNormal = hit.normal;
+					}
+					else
+					{
+						_groundedNormal = Vector3.zero;
+						_verticalVelocity = _rb.velocity.y;
+					}
+				}
+				else if(Grounded)
+				{
+					_groundedNormal = Vector3.zero;
+					_verticalVelocity = _rb.velocity.y;
+					Grounded = false;
+				}
 			}
 			else
 			{
-				radius = GroundedRadius;
-				spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
+				// Otherwise just CheckSphere
+
+				Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
+				Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
 			}
 			
-			Grounded = Physics.CheckSphere(spherePosition, radius, GroundLayers, QueryTriggerInteraction.Ignore);
 
 			// update animator if using character
 			if (_hasAnimator)
@@ -284,30 +344,47 @@ namespace StarterAssets
 			CinemachineCameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch + CameraAngleOverride, _cinemachineTargetYaw, 0.0f);
 		}
 
-		private void Move()
+		private void Move(float timeStep)
 		{
 			// set target speed based on move speed
 			float targetSpeed = IsRolling ? RollSpeed : MoveSpeed;
-
-			// a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
 
 			// note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
 			// if there is no input, set the target speed to 0
 			if (InputScript.move == Vector2.zero) targetSpeed = 0.0f;
 
-			// a reference to the players current horizontal velocity
-			Vector3 horizonalVector;
-
+			// If we're rolling, check against the rigidbody's velocity to see if we hit something
 			if(IsRolling)
 			{
-				horizonalVector = new Vector3(_rb.velocity.x, 0.0f, _rb.velocity.z);
-			}
-			else
-			{
-				horizonalVector = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z);
-			}
+				// Calculate our true velocity based on our position delta
+				Vector3 trueVelocity = (PlayerHead.transform.position - _previousPosition) / timeStep; 
 
-			float currentHorizontalSpeed = horizonalVector.magnitude;
+				// If we're not going uphill (cause uphill sucks)
+				if(trueVelocity.y < 1 || !Grounded)
+				{
+					trueVelocity.y = 0;
+
+					Vector3 idealVelocity = _horizontalSpeed + _bonusVelocity;
+
+					// If the velocity we assigned last frame is significantly different from the rigidbody's velocity now
+					if(idealVelocity.magnitude > trueVelocity.magnitude && (idealVelocity - trueVelocity).magnitude > MaxSpeedDiscrepancy)
+					{
+						// Accept trueVelocity as being correct
+						if(trueVelocity.magnitude > targetSpeed)
+						{
+							_horizontalSpeed = trueVelocity.normalized * targetSpeed;
+							_bonusVelocity = trueVelocity - _horizontalSpeed;
+						}
+						else
+						{
+							_horizontalSpeed = trueVelocity;
+							_bonusVelocity = Vector3.zero;
+						}
+					}
+				}
+				
+				_previousPosition = PlayerHead.transform.position;
+			}
 
 			float inputMagnitude = InputScript.analogMovement ? InputScript.move.magnitude : 1f;
 
@@ -330,33 +407,99 @@ namespace StarterAssets
 
 			Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
 
-			// accelerate or decelerate to target speed
-			_horizontalSpeed = Vector3.MoveTowards(_horizontalSpeed, targetSpeed * targetDirection, Time.deltaTime * speedChangeRate);
+			// The total amount of movement that the player can apply this frame
+			float moveAmount = timeStep * speedChangeRate;
 
-			_animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * speedChangeRate);
+			// If the player is trying to move in the opposite direction of bonusVelocity
+			if(Vector3.Dot(targetDirection, _bonusVelocity) < 0 && targetSpeed != 0)
+			{
+				Vector3 bonusVelocityAgainstTarget = Vector3.Project(_bonusVelocity, targetDirection);
+
+				// If there is more bonusVelocity than the moveAmount is able to counteract, all of our moveAmount goes toward bonusVelocity
+				if(bonusVelocityAgainstTarget.magnitude >= moveAmount)
+				{
+					// Decrease the bonusVelocity first
+					_bonusVelocity += targetDirection * moveAmount;
+					moveAmount = 0;
+				}
+				else
+				{
+					// Otherwise, only part of our movement will fight against bonusVelocity and the rest will move us normally
+					_bonusVelocity -= bonusVelocityAgainstTarget;
+					moveAmount -= bonusVelocityAgainstTarget.magnitude;
+				}
+			}
+
+			// accelerate or decelerate to target speed based on how much movement we have left
+			_horizontalSpeed = Vector3.MoveTowards(_horizontalSpeed, targetSpeed * targetDirection, moveAmount);
+
+			_animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, timeStep * speedChangeRate);
 
 			// move the player
 			if(IsRolling)
 			{
-				// Choose vertical speed based on if we're grounded or jumping or neither
-				Vector3 verticalSpeed;
+				Vector3 totalHorizontalVelocity = _horizontalSpeed + _bonusVelocity;
+				// Choose vertical speed based on if we're grounded or jumping/falling
+				Vector3 verticalSpeed = Vector3.zero;
 				if(Grounded && _verticalVelocity <= 0)
 				{
-					// Grounded
-					verticalSpeed = new Vector3(0.0f, _rb.velocity.y + Gravity * Time.deltaTime, 0.0f);
+					// If we're grounded && not jumping, apply a downward force toward the ground
+
+					// Find the normalized projection from our horizontal speed onto the ground plane
+					Vector3 projectionVector = Vector3.ProjectOnPlane(totalHorizontalVelocity, _groundedNormal).normalized;
+
+					// Ensure we're not on flat ground or going uphill
+					if(projectionVector != Vector3.zero && projectionVector.y < 0)
+					{
+						// Remove the vertical component from the projection normal
+						Vector3 horizontalComponents = new Vector3(projectionVector.x, 0, projectionVector.z);
+
+						// Find the scalar that would allow the horizontal components to reach our horizontal speed
+						float scalar = totalHorizontalVelocity.magnitude / horizontalComponents.magnitude;
+
+						// Apply that scalar to the vertical component. This is how far we need to move down this frame to follow the ground plane
+						verticalSpeed = new Vector3(0, projectionVector.y * scalar, 0);
+
+						// Extra downhill force
+						verticalSpeed += _groundedNormal * 20 * Gravity * timeStep;
+					}
+					else if(Vector3.Dot(_groundedNormal, Vector3.up) > 0.9f)
+					{
+						// Extra flat ground force
+						verticalSpeed += _groundedNormal * 10 * Gravity * timeStep;
+					}
+					else
+					{
+						// Extra uphill force
+						verticalSpeed += _groundedNormal * 1 * Gravity * timeStep;
+					}
 				}
 				else
 				{
-					// Jumping or falling
+					// If we're jumping or falling, just use verticalVelocity
 					verticalSpeed = new Vector3(0.0f, _verticalVelocity, 0.0f);
 				}
 
 				// Apply the velocity to the rigidbody
-				_rb.velocity = _horizontalSpeed + verticalSpeed;
+				_rb.velocity = totalHorizontalVelocity + verticalSpeed;
+
+				// Decay bonus velocity
+				if(_bonusVelocity != Vector3.zero)
+				{
+					float newMagnitude = (_bonusVelocity.magnitude - BonusSpeedDecayRate * timeStep);
+					if(newMagnitude < 0)
+					{
+						_bonusVelocity = Vector3.zero;
+					}
+					else
+					{
+						_bonusVelocity = _bonusVelocity.normalized * newMagnitude;
+					}
+				}
 			}
 			else
 			{
-				_controller.Move(_horizontalSpeed * Time.deltaTime + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+				_controller.Move(_horizontalSpeed * timeStep + new Vector3(0.0f, _verticalVelocity, 0.0f) * timeStep);
 			}
 
 			// if the player is moving, face the player in the direction they're moving
@@ -373,7 +516,7 @@ namespace StarterAssets
 			}
 		}
 
-		private void JumpAndGravity()
+		private void JumpAndGravity(float timeStep)
 		{
 			if (Grounded)
 			{
@@ -388,7 +531,7 @@ namespace StarterAssets
 				}
 
 				// stop our velocity dropping infinitely when grounded
-				if (_verticalVelocity < 0f)
+				if (_verticalVelocity < 0)
 				{
 					if(IsRolling)
 					{
@@ -416,7 +559,7 @@ namespace StarterAssets
 				// jump timeout
 				if (_jumpTimeoutDelta >= 0.0f)
 				{
-					_jumpTimeoutDelta -= Time.deltaTime;
+					_jumpTimeoutDelta -= timeStep;
 				}
 			}
 			else
@@ -427,7 +570,7 @@ namespace StarterAssets
 				// fall timeout
 				if (_fallTimeoutDelta >= 0.0f)
 				{
-					_fallTimeoutDelta -= Time.deltaTime;
+					_fallTimeoutDelta -= timeStep;
 				}
 				else
 				{
@@ -445,7 +588,7 @@ namespace StarterAssets
 			// apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
 			if (_verticalVelocity < _terminalVelocity)
 			{
-				_verticalVelocity += Gravity * Time.deltaTime;
+				_verticalVelocity += Gravity * timeStep;
 			}
 		}
 
@@ -467,20 +610,12 @@ namespace StarterAssets
 			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
 			if(IsRolling)
 			{
-				Gizmos.DrawSphere(new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - PlayerHeadRadius - RollingGroundedOffset, PlayerHead.transform.position.z), RollingGroundedRadius);
+				Gizmos.DrawSphere(new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - RollingGroundedDistance, PlayerHead.transform.position.z), RollingGroundedRadius);
 			}
 			else
 			{
 				Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
 			}
-		}
-
-		void OnCollisionEnter(Collision collision)
-		{
-			// This should resonably only be called while rolling
-
-			_horizontalSpeed = new Vector3(_rb.velocity.x, 0, _rb.velocity.z);
-			_verticalVelocity = _rb.velocity.y;
 		}
 
 		private IEnumerator ExitRollRoutine()

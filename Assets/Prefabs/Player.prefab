@@ -104,9 +104,10 @@ MonoBehaviour:
   AcceptInputScript: 1
   MoveSpeed: 8
   SpeedChangeRate: 30
+  MaxSpeedDiscrepancy: 5
   RollSpeed: 13
   RollingSpeedChangeRate: 20
-  RollingDecelerationMultiplier: 0.2
+  BonusSpeedDecayRate: 5
   PlayerHead: {fileID: 2406775303628015353}
   PlayerHeadRadius: 0.5
   IsRolling: 0
@@ -120,8 +121,8 @@ MonoBehaviour:
   Grounded: 1
   GroundedOffset: -0.45
   GroundedRadius: 0.5
-  RollingGroundedOffset: -0.37
-  RollingGroundedRadius: 0.4
+  RollingGroundedDistance: 0.1
+  RollingGroundedRadius: 0.45
   GroundLayers:
     serializedVersion: 2
     m_Bits: 513
@@ -161,7 +162,7 @@ Rigidbody:
   serializedVersion: 2
   m_Mass: 1
   m_Drag: 0
-  m_AngularDrag: 0
+  m_AngularDrag: 50
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 1
@@ -174,7 +175,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4313470006470053232}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e0c3cacb1b09cb54bb5b18b4d792b58e, type: 2}
   m_IsTrigger: 0
   m_Enabled: 0
   m_Radius: 0.5
