@@ -9,6 +9,9 @@ ModelImporter:
   - first:
       74: 1960238027791359476
     second: Armature|Sweep
+  - first:
+      74: 8349542763059015795
+    second: Armature|Walk
   externalObjects: {}
   materials:
     materialImportMode: 2

@@ -106,11 +106,11 @@ MonoBehaviour:
   abilityRatio: 0.5
   InputScript: {fileID: 0}
   CurrentState: 0
-  aggroSpeed: 10
-  leashSpeed: 10
+  aggroSpeed: 15
+  leashSpeed: 15
   wanderSpeed: 4
-  maxAttackRange: 3
-  idealAttackRange: 1.5
+  maxAttackRange: 1.75
+  idealAttackRange: 1.25
   wanderRadius: 2
   minWanderFrequency: 2
   maxWanderFrequency: 4
@@ -118,6 +118,14 @@ MonoBehaviour:
   maxWanderPointDistance: 4
   MoveSpeed: 5
   SpeedChangeRate: 10
+  Grounded: 1
+  GroundedOffset: -0.09
+  GroundedRadius: 0.2
+  Gravity: -25
+  GroundLayers:
+    serializedVersion: 2
+    m_Bits: 1
+  FallTimeout: 0.05
 --- !u!114 &4892833188912340026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -150,8 +158,8 @@ NavMeshAgent:
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
-  m_AngularSpeed: 120
-  m_StoppingDistance: 1
+  m_AngularSpeed: 720
+  m_StoppingDistance: 0
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1

@@ -45,8 +45,12 @@ public abstract class MobileEnemyBase : EnemyBase
     public float GroundedOffset = -0.125f;
     [Tooltip("The radius of the grounded check. Should generally match the radius of the CharacterController")]
     public float GroundedRadius = 0.25f;
+    [Tooltip("The character uses its own gravity value. The engine default is -9.81f")]
+    public float Gravity = -30.0f;
     [Tooltip("What layers the character uses as ground")]
     public LayerMask GroundLayers;
+    [Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
+    public float FallTimeout = 0.05f;
 
     protected CharacterController _controller;
     protected NavMeshAgent _agent;
@@ -58,6 +62,7 @@ public abstract class MobileEnemyBase : EnemyBase
     protected float _rotationVelocity;
     protected float _verticalVelocity;
     protected float _terminalVelocity = 53.0f;
+    protected float _fallTimeoutDelta;
 
     protected override void Awake()
     {
@@ -78,11 +83,14 @@ public abstract class MobileEnemyBase : EnemyBase
         if(CurrentState == EnemyState.Possessed)
         {
             GroundedCheck();
+            Fall();
             Move();
         }
         else if(CurrentState == EnemyState.Aggro)
         {
-            _agent.SetDestination(StarterAssetsInputs.currentPlayerObject.transform.position);
+            Transform player = StarterAssetsInputs.currentPlayerObject.transform;
+            Vector3 fromPlayerToThis = transform.position - player.position;
+            _agent.SetDestination(player.position + fromPlayerToThis.normalized * idealAttackRange);
         }
         else if(CurrentState == EnemyState.Attacking)
         {
@@ -98,7 +106,7 @@ public abstract class MobileEnemyBase : EnemyBase
         }
     }
 
-    private void GroundedCheck()
+    protected void GroundedCheck()
     {
         Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
         Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
@@ -152,6 +160,40 @@ public abstract class MobileEnemyBase : EnemyBase
         //     _animator.SetFloat(_animIDSpeed, _animationBlend);
         //     _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
         // }
+    }
+
+    protected void Fall()
+    {
+        if (Grounded)
+        {
+            // reset the fall timeout timer
+            _fallTimeoutDelta = FallTimeout;
+
+            // stop our velocity dropping infinitely when grounded
+            if (_verticalVelocity < 0)
+            {
+                _verticalVelocity = -500f;
+            }
+        }
+        else
+        {
+            // fall timeout
+            if (_fallTimeoutDelta >= 0.0f)
+            {
+                _fallTimeoutDelta -= Time.deltaTime;
+
+                if (_verticalVelocity < 0)
+                {
+                    _verticalVelocity = 0;
+                }
+            }
+        }
+
+        // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
+        if (_verticalVelocity < _terminalVelocity)
+        {
+            _verticalVelocity += Gravity * Time.deltaTime;
+        }
     }
 
     protected override bool CanAttack()
