@@ -46,6 +46,7 @@ GameObject:
   - component: {fileID: 4923491595305467664}
   - component: {fileID: 226366593604980644}
   - component: {fileID: 6812820357998572095}
+  - component: {fileID: 5587373974919240703}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -101,36 +102,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   InputScript: {fileID: 0}
-  AcceptInputScript: 1
+  AcceptInput: 1
   MoveSpeed: 8
   SpeedChangeRate: 30
   MaxSpeedDiscrepancy: 5
+  CurrentState: 0
   RollSpeed: 13
   RollingSpeedChangeRate: 20
   BonusSpeedDecayRate: 5
   PlayerHead: {fileID: 2406775303628015353}
   PlayerHeadRadius: 0.5
-  IsRolling: 0
   JumpHeight: 2
   Gravity: -25
   AerialSpeedChangeRate: 15
   JumpTimeout: 0
-  FallTimeout: 0.15
+  FallTimeout: 0.05
   RollTimeout: 0.5
   RollExitTime: 0.15
   Grounded: 1
-  GroundedOffset: -0.45
-  GroundedRadius: 0.5
+  GroundedOffset: -0.42
+  GroundedRadius: 0.45
   RollingGroundedDistance: 0.1
   RollingGroundedRadius: 0.45
   GroundLayers:
     serializedVersion: 2
     m_Bits: 513
-  CinemachineCameraTarget: {fileID: 8442733247385236523}
-  TopClamp: 70
-  BottomClamp: -30
-  CameraAngleOverride: 0
-  LockCameraPosition: 0
   BodyParts:
   - {fileID: 3033826441790226152}
   - {fileID: 848023790579799622}
@@ -182,6 +178,25 @@ CapsuleCollider:
   m_Height: 0
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &5587373974919240703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4313470006470053232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af6f5e4e0fb8fc84b9768502e1eb854e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  VirtualCameraPrefab: {fileID: 2070925441746177671, guid: a1a802ecaf6775746bb2a929fb554ad8, type: 3}
+  CinemachineCameraTarget: {fileID: 8442733247385236524}
+  TopClamp: 70
+  BottomClamp: -30
+  CameraAngleOverride: 0
+  LockCameraPosition: 0
+  InitializeAsPlayerCamera: 1
 --- !u!1 &8442733247385236523
 GameObject:
   m_ObjectHideFlags: 0

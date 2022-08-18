@@ -10,16 +10,25 @@ using UnityEngine.InputSystem;
 
 namespace StarterAssets
 {
+	public enum PlayerState
+	{
+		Walking,
+		Rolling,
+		ExitingRoll
+	}
+
+	[RequireComponent(typeof(CameraManager))]
 	[RequireComponent(typeof(CharacterController))]
 	[RequireComponent(typeof(CapsuleCollider))]
 	[RequireComponent(typeof(Rigidbody))]
 	public class ThirdPersonController : MonoBehaviour
 	{
+
 		[Header("Input")]
 		[Tooltip("The script that provides the movement inputs to this controller.")]
 		public StarterAssetsInputs InputScript;
 		[Tooltip("Whether this controller can accept input right now.")]
-		public bool AcceptInputScript = true;
+		public bool AcceptInput = true;
 
 		[Header("Player")]
 		[Tooltip("Move speed of the character in m/s")]
@@ -28,6 +37,8 @@ namespace StarterAssets
 		public float SpeedChangeRate = 10.0f;
 		[Tooltip("The maximum allowed difference between the rigidbody's velocity and the intended velocity before we allow the rigidbody to take over.")]
 		public float MaxSpeedDiscrepancy = 1f;
+		[Tooltip("The player's currentState.")]
+		public PlayerState CurrentState;
 		
 		[Space(10)]
 		[Tooltip("Rolling speed of the character in m/s")]
@@ -40,8 +51,6 @@ namespace StarterAssets
 		public GameObject PlayerHead;
 		[Tooltip("The radius of the player's head object")]
 		public float PlayerHeadRadius;
-		[Tooltip("Whether this controller is rolling.")]
-		public bool IsRolling = false;
 
 		[Space(10)]
 		[Tooltip("The height the player can jump")]
@@ -74,26 +83,10 @@ namespace StarterAssets
 		public float RollingGroundedRadius = 0.5f;
 		[Tooltip("What layers the character uses as ground")]
 		public LayerMask GroundLayers;
-
-		[Header("Cinemachine")]
-		[Tooltip("The follow target set in the Cinemachine Virtual Camera that the camera will follow")]
-		public GameObject CinemachineCameraTarget;
-		[Tooltip("How far in degrees can you move the camera up")]
-		public float TopClamp = 70.0f;
-		[Tooltip("How far in degrees can you move the camera down")]
-		public float BottomClamp = -30.0f;
-		[Tooltip("Additional degress to override the camera. Useful for fine tuning camera position when locked")]
-		public float CameraAngleOverride = 0.0f;
-		[Tooltip("For locking the camera position on all axis")]
-		public bool LockCameraPosition = false;
 		
 		[Header("Model")]
 		[Tooltip("The parts of the model to disable while rolling")]
 		public List<GameObject> BodyParts;
-
-		// cinemachine
-		private float _cinemachineTargetYaw;
-		private float _cinemachineTargetPitch;
 
 		// player
 		private float _animationBlend;
@@ -116,6 +109,7 @@ namespace StarterAssets
 
 		private Animator _animator;
 		private CharacterController _controller;
+		private CameraManager _cameraScript;
 		private GameObject _mainCamera;
 		private CapsuleCollider _collider;
 		private Rigidbody _rb;
@@ -124,10 +118,10 @@ namespace StarterAssets
 		private Vector3 _bonusVelocity;
 		private Vector3 _groundedNormal;
 
-		private const float _threshold = 0.01f;
-
 		private bool _hasAnimator;
-		private bool _canMove;
+
+		private bool IsRolling { get { return CurrentState == PlayerState.Rolling; } }
+		private bool CanMove { get { return CurrentState != PlayerState.ExitingRoll; }}
 
 		private void Awake()
 		{
@@ -136,6 +130,8 @@ namespace StarterAssets
 			{
 				_mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 			}
+
+			StarterAssetsInputs.currentPlayerObject = gameObject;
 		}
 
 		private void Start()
@@ -144,13 +140,14 @@ namespace StarterAssets
 			_controller = GetComponent<CharacterController>();
 			_collider = GetComponent<CapsuleCollider>();
 			_rb = GetComponent<Rigidbody>();
+			_cameraScript = GetComponent<CameraManager>();
 
 			_collider.radius = PlayerHeadRadius;
 			_collider.height = 0;
 			_collider.enabled = false;
 			_rb.detectCollisions = false;
 
-			_canMove = true;
+			CurrentState = PlayerState.Walking;
 
 			AssignAnimationIDs();
 
@@ -162,7 +159,7 @@ namespace StarterAssets
 
 		private void Update()
 		{
-			if(_canMove && !IsRolling)
+			if(CurrentState == PlayerState.Walking)
 			{
 				RollCheck(Time.deltaTime);
 				JumpAndGravity(Time.deltaTime);
@@ -173,7 +170,7 @@ namespace StarterAssets
 
 		private void FixedUpdate()
 		{
-			if(_canMove && IsRolling)
+			if(CanMove && IsRolling)
 			{
 				RollCheck(Time.fixedDeltaTime);
 				JumpAndGravity(Time.fixedDeltaTime);
@@ -184,7 +181,7 @@ namespace StarterAssets
 
 		private void LateUpdate()
 		{
-			CameraRotation();
+			_cameraScript.CameraRotation(InputScript.look);
 		}
 
 		private void AssignAnimationIDs()
@@ -194,6 +191,13 @@ namespace StarterAssets
 			_animIDJump = Animator.StringToHash("Jump");
 			_animIDFreeFall = Animator.StringToHash("FreeFall");
 			_animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
+		}
+
+		public void IncapacitatePlayer()
+		{
+			AcceptInput = false;
+			EnterRoll();
+			_cameraScript.TogglePlayerCamera(false);
 		}
 
 		private void RollCheck(float timeStep)
@@ -228,25 +232,7 @@ namespace StarterAssets
                 else
                 {
                 	// If we are not currently rolling, enter roll mode
-                    IsRolling = true;
-
-                    // Transfer all velocity into the rigidbody
-                    _rb.velocity = _controller.velocity;
-
-					// Disable the ghost body
-                    foreach (GameObject model in BodyParts)
-                    {
-                        model.SetActive(false);
-                    }
-
-					// Swap from character controller to rigidbody
-					_rb.detectCollisions = true;
-					_collider.enabled = true;
-					_controller.enabled = false;
-
-					// Set the collider to be a sphere
-					_collider.height = PlayerHeadRadius * 2;
-					_collider.center = new Vector3(0, PlayerHeadRadius * 2, 0);
+					EnterRoll();
                 }
 
 				// Reset roll timer
@@ -259,6 +245,29 @@ namespace StarterAssets
 				InputScript.roll = false;
 				_rollTimeoutDelta -= timeStep;
 			}
+		}
+
+		private void EnterRoll()
+		{
+			CurrentState = PlayerState.Rolling;
+
+			// Transfer all velocity into the rigidbody
+			_rb.velocity = _controller.velocity;
+
+			// Disable the ghost body
+			foreach (GameObject model in BodyParts)
+			{
+				model.SetActive(false);
+			}
+
+			// Swap from character controller to rigidbody
+			_rb.detectCollisions = true;
+			_collider.enabled = true;
+			_controller.enabled = false;
+
+			// Set the collider to be a sphere
+			_collider.height = PlayerHeadRadius * 2;
+			_collider.center = new Vector3(0, PlayerHeadRadius * 2, 0);
 		}
 
 		private void GroundedCheck(float timeStep)
@@ -327,23 +336,6 @@ namespace StarterAssets
 			}
 		}
 
-		private void CameraRotation()
-		{
-			// if there is an input and camera position is not fixed
-			if (InputScript.look.sqrMagnitude >= _threshold && !LockCameraPosition)
-			{
-				_cinemachineTargetYaw += InputScript.look.x * Time.deltaTime;
-				_cinemachineTargetPitch += InputScript.look.y * Time.deltaTime;
-			}
-
-			// clamp our rotations so our values are limited 360 degrees
-			_cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
-			_cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
-
-			// Cinemachine will follow this target
-			CinemachineCameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch + CameraAngleOverride, _cinemachineTargetYaw, 0.0f);
-		}
-
 		private void Move(float timeStep)
 		{
 			// set target speed based on move speed
@@ -351,7 +343,7 @@ namespace StarterAssets
 
 			// note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
 			// if there is no input, set the target speed to 0
-			if (InputScript.move == Vector2.zero) targetSpeed = 0.0f;
+			if (!AcceptInput || InputScript.move == Vector2.zero) targetSpeed = 0.0f;
 
 			// If we're rolling, check against the rigidbody's velocity to see if we hit something
 			if(IsRolling)
@@ -571,6 +563,11 @@ namespace StarterAssets
 				if (_fallTimeoutDelta >= 0.0f)
 				{
 					_fallTimeoutDelta -= timeStep;
+
+					if (_verticalVelocity < 0)
+					{
+						_verticalVelocity = 0;
+					}
 				}
 				else
 				{
@@ -592,35 +589,9 @@ namespace StarterAssets
 			}
 		}
 
-		private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
-		{
-			if (lfAngle < -360f) lfAngle += 360f;
-			if (lfAngle > 360f) lfAngle -= 360f;
-			return Mathf.Clamp(lfAngle, lfMin, lfMax);
-		}
-
-		private void OnDrawGizmosSelected()
-		{
-			Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
-			Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
-
-			if (Grounded) Gizmos.color = transparentGreen;
-			else Gizmos.color = transparentRed;
-			
-			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
-			if(IsRolling)
-			{
-				Gizmos.DrawSphere(new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - RollingGroundedDistance, PlayerHead.transform.position.z), RollingGroundedRadius);
-			}
-			else
-			{
-				Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
-			}
-		}
-
 		private IEnumerator ExitRollRoutine()
 		{
-			_canMove = false;
+			CurrentState = PlayerState.ExitingRoll;
 			float progress = 0;
 
 			// Grab the current rotation
@@ -673,8 +644,26 @@ namespace StarterAssets
 			_controller.enabled = true;
 
 			// Finally exit roll mode
-			IsRolling = false;
-			_canMove = true;
+			CurrentState = PlayerState.Walking;
+		}
+
+		private void OnDrawGizmosSelected()
+		{
+			Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
+			Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
+
+			if (Grounded) Gizmos.color = transparentGreen;
+			else Gizmos.color = transparentRed;
+			
+			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
+			if(IsRolling)
+			{
+				Gizmos.DrawSphere(new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - RollingGroundedDistance, PlayerHead.transform.position.z), RollingGroundedRadius);
+			}
+			else
+			{
+				Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
+			}
 		}
 	}
 }

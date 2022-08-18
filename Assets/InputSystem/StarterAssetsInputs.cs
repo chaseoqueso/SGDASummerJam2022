@@ -7,14 +7,19 @@ namespace StarterAssets
 {
 	public class StarterAssetsInputs : MonoBehaviour
 	{
+		public static GameObject currentPlayerObject;
+
 		[Header("Character Input Values")]
 		public Vector2 move;
 		public Vector2 look;
 		public bool jump;
 		public bool roll;
+		public bool ability1;
+		public bool ability2;
 
 		[Header("Movement Settings")]
 		public bool analogMovement;
+		public bool canUseAbilities = false;
 
 #if !UNITY_IOS || !UNITY_ANDROID
 		[Header("Mouse Cursor Settings")]
@@ -45,6 +50,22 @@ namespace StarterAssets
 		{
 			RollInput(value.isPressed);
 		}
+
+		public void OnAbility1(InputValue value)
+		{
+			if(canUseAbilities)
+			{
+				Ability1Input(value.isPressed);
+			}
+		}
+
+		public void OnAbility2(InputValue value)
+		{
+			if(canUseAbilities)
+			{
+				Ability2Input(value.isPressed);
+			}
+		}
 #else
 	// old input sys if we do decide to have it (most likely wont)...
 #endif
@@ -68,6 +89,16 @@ namespace StarterAssets
 		public void RollInput(bool newRollState)
 		{
 			roll = newRollState;
+		}
+
+		public void Ability1Input(bool newRollState)
+		{
+			ability1 = newRollState;
+		}
+
+		public void Ability2Input(bool newRollState)
+		{
+			ability2 = newRollState;
 		}
 
 #if !UNITY_IOS || !UNITY_ANDROID
