@@ -6,10 +6,15 @@ using UnityEngine.Events;
 
 public class Broom : MobileEnemyBase
 {
+    [Header("Broom Properties")]
     [Tooltip("A BoxCollider to reference when simulating the ability 1 hitbox.")]
     [SerializeField] private BoxCollider Ability1ReferenceHitbox;
     [Tooltip("A BoxCollider to reference when simulating the ability 2 hitbox.")]
     [SerializeField] private BoxCollider Ability2ReferenceHitbox;
+    [Tooltip("The strength of horizontal knockback when hitting the player.")]
+    [SerializeField] private float KnockbackForce = 10f;
+    [Tooltip("The strength of vertical knockback when hitting the player.")]
+    [SerializeField] private float KnockupForce = 5f;
 
     public override void TriggerAbility1()
     {
@@ -23,7 +28,6 @@ public class Broom : MobileEnemyBase
         List<GameObject> hitObjects = hits.ConvertAll<GameObject>((Collider c) => c.gameObject);
         foreach(GameObject hitObject in hitObjects)
         {
-            Debug.Log(hitObject);
             if(hitObject == gameObject) // Don't do anything if the enemy hits itself
             {
                 continue;
@@ -37,6 +41,25 @@ public class Broom : MobileEnemyBase
             {
                 // Kill any enemies and interact with any objects
             }
+        }
+    }
+
+    public override void TriggerAbility2()
+    {
+        // Find all players and enemies in the hitbox
+        Collider[] hits = Physics.OverlapBox(Ability1ReferenceHitbox.transform.position + Ability1ReferenceHitbox.transform.rotation * Ability1ReferenceHitbox.center, 
+                                            Ability1ReferenceHitbox.size, 
+                                            Ability1ReferenceHitbox.transform.rotation, 
+                                            LayerMask.GetMask("Player"), 
+                                            QueryTriggerInteraction.Collide);
+
+        if(hits.Length != 0)
+        {
+            ThirdPersonController playerScript = hits[0].GetComponent<ThirdPersonController>();
+
+            // Force it into a roll and knock it away
+            playerScript.ForceRoll();
+            playerScript.AddVelocity(transform.forward * KnockbackForce + Vector3.up * KnockupForce);
         }
     }
 }

@@ -56,6 +56,7 @@ public abstract class MobileEnemyBase : EnemyBase
     protected NavMeshAgent _agent;
     protected Coroutine _wanderRoutine;
     protected Vector3 _horizontalSpeed;
+    protected Vector3 _spawnPoint;
     protected BasicRigidBodyPush _rbPusher;
     
     // player
@@ -76,33 +77,74 @@ public abstract class MobileEnemyBase : EnemyBase
         _controller = GetComponent<CharacterController>();
         _controller.enabled = false;
         _rbPusher = GetComponent<BasicRigidBodyPush>();
+        _spawnPoint = transform.position;
     }
 
     protected override void Update()
     {
         base.Update();
 
-        if(CurrentState == EnemyState.Possessed)
+        switch (CurrentState)
         {
-            GroundedCheck();
-            Fall();
-            Move();
-        }
-        else if(CurrentState == EnemyState.Aggro)
-        {
-            Transform player = StarterAssetsInputs.currentPlayerObject.transform;
-            Vector3 fromPlayerToThis = transform.position - player.position;
-            _agent.SetDestination(player.position + fromPlayerToThis.normalized * idealAttackRange);
-        }
-        else if(CurrentState == EnemyState.Attacking)
-        {
-            _agent.SetDestination(transform.position);
+            case EnemyState.Possessed: // If Possessed, let the player control the enemy
+                GroundedCheck();
+                Fall();
+                Move();
+                break;
+
+            case EnemyState.Aggro: // If aggro'd
+                Transform player = StarterAssetsInputs.currentPlayerObject.transform;
+                Vector3 towardsPlayer = player.position - transform.position;
+
+                // Set our speed and destination
+                _agent.speed = aggroSpeed;
+                _agent.SetDestination(player.position - towardsPlayer.normalized * idealAttackRange);
+                
+                // Look towards the player
+                towardsPlayer.y = 0;
+                transform.rotation = Quaternion.LookRotation(towardsPlayer, Vector3.up);
+                break;
+
+            case EnemyState.Attacking: // If attacking, freeze in place
+                _agent.SetDestination(transform.position);
+                break;
+
+            case EnemyState.Leash: // If leashed
+            
+                // Go back to spawn and move at leash speed
+                _agent.SetDestination(_spawnPoint);
+                _agent.speed = leashSpeed;
+
+                // If we're within wander radius, return to wander mode
+                if(Vector3.Distance(transform.position, _spawnPoint) < wanderRadius)
+                {
+                    TransitionState(CurrentState, EnemyState.Wander);
+                }
+                
+                // Rotate towards spawn
+                transform.rotation = Quaternion.LookRotation(_spawnPoint - transform.position, Vector3.up);
+                break;
+
+            case EnemyState.Wander: // If wandering
+
+                // Set our speed and look towards our destination
+                _agent.speed = wanderSpeed;
+                Vector3 destVector = _agent.destination - transform.position;
+
+                if(destVector != Vector3.zero)
+                {
+                    transform.rotation = Quaternion.LookRotation(destVector, Vector3.up);
+                }
+                break;
         }
     }
 
     protected virtual void FixedUpdate()
     {
-        _rbPusher.PushRigidBodies(_controller.velocity * Time.fixedDeltaTime);
+        if(IsPossessed())
+        {
+            _rbPusher.PushRigidBodies(_horizontalSpeed * Time.fixedDeltaTime);
+        }
     }
 
     void LateUpdate()
@@ -214,5 +256,11 @@ public abstract class MobileEnemyBase : EnemyBase
     protected override bool CanAttack()
     {
         return base.CanAttack() && Vector3.Distance(StarterAssetsInputs.currentPlayerObject.transform.position, transform.position) < maxAttackRange;
+    }
+
+    protected override bool ShouldLeash()
+    {
+        return (Vector3.Distance(StarterAssetsInputs.currentPlayerObject.transform.position, _spawnPoint) > leashRadius ||
+                Vector3.Distance(transform.position, _spawnPoint) > leashRadius);
     }
 }

@@ -121,6 +121,7 @@ namespace StarterAssets
 		private Vector3 _groundedNormal;
 
 		private bool _hasAnimator;
+		private bool _velocityAdded;
 
 		private bool IsRolling { get { return CurrentState == PlayerState.Rolling; } }
 		private bool CanMove { get { return CurrentState != PlayerState.ExitingRoll; }}
@@ -169,7 +170,26 @@ namespace StarterAssets
 
 		public void AddVelocity(Vector3 velocity)
 		{
-			_bonusVelocity += velocity;
+			_bonusVelocity += new Vector3(velocity.x, 0, velocity.z);
+			_verticalVelocity += velocity.y;
+			_velocityAdded = true;
+		}
+
+		public void SetVelocity(Vector3 velocity)
+		{
+			_bonusVelocity = new Vector3(velocity.x, 0, velocity.z);
+			_verticalVelocity = velocity.y;
+			_velocityAdded = true;
+		}
+
+		public void ForceRoll()
+		{
+			if(!IsRolling)
+			{
+				EnterRoll();
+			}
+
+			_rollTimeoutDelta = RollTimeout;
 		}
 
 		private void Update()
@@ -211,7 +231,7 @@ namespace StarterAssets
 		private void RollCheck(float timeStep)
 		{
 			// If roll is pressed and the timeout timer is done
-			if (InputScript.roll && _rollTimeoutDelta <= 0.0f)
+			if (AcceptInput && InputScript.roll && _rollTimeoutDelta <= 0.0f)
 			{
                 if (IsRolling)
                 {
@@ -354,7 +374,7 @@ namespace StarterAssets
 			if (!AcceptInput || InputScript.move == Vector2.zero) targetSpeed = 0.0f;
 
 			// If we're rolling, check against the rigidbody's velocity to see if we hit something
-			if(IsRolling)
+			if(IsRolling && !_velocityAdded)
 			{
 				// Calculate our true velocity based on our position delta
 				Vector3 trueVelocity = (PlayerHead.transform.position - _previousPosition) / timeStep; 
@@ -385,6 +405,8 @@ namespace StarterAssets
 				
 				_previousPosition = PlayerHead.transform.position;
 			}
+
+			_velocityAdded = false;
 
 			float inputMagnitude = InputScript.analogMovement ? InputScript.move.magnitude : 1f;
 
@@ -546,7 +568,7 @@ namespace StarterAssets
 				}
 
 				// Jump
-				if (InputScript.jump && _jumpTimeoutDelta <= 0.0f)
+				if (AcceptInput && InputScript.jump && _jumpTimeoutDelta <= 0.0f)
 				{
 					// the square root of H * -2 * G = how much velocity needed to reach desired height
 					_verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);

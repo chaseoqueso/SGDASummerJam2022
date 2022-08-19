@@ -31,14 +31,16 @@ public class BasicRigidBodyPush : MonoBehaviour
 			// make sure we only push desired layer(s)
 			var bodyLayerMask = 1 << body.gameObject.layer;
 			if ((bodyLayerMask & pushLayers.value) == 0) return;
-
-			body.MovePosition(body.position + pushDir);
-			body.velocity = pushDir / Time.fixedDeltaTime + new Vector3(0, body.velocity.y, 0);
 			
 			ThirdPersonController playerScript;
 			if(body.TryGetComponent<ThirdPersonController>(out playerScript))
 			{
-				playerScript.AddVelocity(pushDir / Time.fixedDeltaTime);
+				playerScript.SetVelocity(pushDir / Time.fixedDeltaTime);
+			}
+			else
+			{
+				body.MovePosition(body.position + pushDir);
+				body.velocity = pushDir / Time.fixedDeltaTime + new Vector3(0, body.velocity.y, 0);
 			}
 		}
 	}

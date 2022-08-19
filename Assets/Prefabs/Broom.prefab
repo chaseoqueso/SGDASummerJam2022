@@ -149,8 +149,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   aggroRadius: 10
   leashRadius: 20
-  minAttackDelay: 1
-  maxAttackDelay: 2
+  minAttackDelay: 0.5
+  maxAttackDelay: 0.75
   abilityRatio: 0.5
   InputScript: {fileID: 0}
   CurrentState: 0
@@ -176,6 +176,8 @@ MonoBehaviour:
   FallTimeout: 0.05
   Ability1ReferenceHitbox: {fileID: 1419294460}
   Ability2ReferenceHitbox: {fileID: 1419294460}
+  KnockbackForce: 15
+  KnockupForce: 5
 --- !u!114 &4892833188912340026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -223,9 +225,9 @@ NavMeshAgent:
   m_AgentTypeID: 0
   m_Radius: 0.3
   m_Speed: 3.5
-  m_Acceleration: 8
+  m_Acceleration: 1e+10
   avoidancePriority: 50
-  m_AngularSpeed: 720
+  m_AngularSpeed: 0
   m_StoppingDistance: 0
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
@@ -243,7 +245,7 @@ CapsuleCollider:
   m_GameObject: {fileID: 4892833188912340031}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   m_Radius: 0.3
   m_Height: 2.5
   m_Direction: 1
