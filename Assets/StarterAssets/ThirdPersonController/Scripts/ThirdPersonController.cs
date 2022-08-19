@@ -23,7 +23,6 @@ namespace StarterAssets
 	[RequireComponent(typeof(Rigidbody))]
 	public class ThirdPersonController : MonoBehaviour
 	{
-
 		[Header("Input")]
 		[Tooltip("The script that provides the movement inputs to this controller.")]
 		public StarterAssetsInputs InputScript;
@@ -83,6 +82,8 @@ namespace StarterAssets
 		public float RollingGroundedRadius = 0.5f;
 		[Tooltip("What layers the character uses as ground")]
 		public LayerMask GroundLayers;
+		[Tooltip("What layers the character collides with")]
+		public LayerMask ObstacleLayers;
 		
 		[Header("Model")]
 		[Tooltip("The parts of the model to disable while rolling")]
@@ -109,6 +110,7 @@ namespace StarterAssets
 
 		private Animator _animator;
 		private CharacterController _controller;
+		private BasicRigidBodyPush _rbPusher;
 		private CameraManager _cameraScript;
 		private GameObject _mainCamera;
 		private CapsuleCollider _collider;
@@ -138,13 +140,14 @@ namespace StarterAssets
 		{
 			_hasAnimator = TryGetComponent(out _animator);
 			_controller = GetComponent<CharacterController>();
+			_rbPusher = GetComponent<BasicRigidBodyPush>();
 			_collider = GetComponent<CapsuleCollider>();
 			_rb = GetComponent<Rigidbody>();
 			_cameraScript = GetComponent<CameraManager>();
 
 			_collider.radius = PlayerHeadRadius;
 			_collider.height = 0;
-			_collider.enabled = false;
+			_collider.isTrigger = true;
 			_rb.detectCollisions = false;
 
 			CurrentState = PlayerState.Walking;
@@ -155,6 +158,18 @@ namespace StarterAssets
 			_jumpTimeoutDelta = JumpTimeout;
 			_fallTimeoutDelta = FallTimeout;
 			_rollTimeoutDelta = RollTimeout;
+		}
+
+		public void IncapacitatePlayer()
+		{
+			AcceptInput = false;
+			EnterRoll();
+			_cameraScript.TogglePlayerCamera(false);
+		}
+
+		public void AddVelocity(Vector3 velocity)
+		{
+			_bonusVelocity += velocity;
 		}
 
 		private void Update()
@@ -193,13 +208,6 @@ namespace StarterAssets
 			_animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
 		}
 
-		public void IncapacitatePlayer()
-		{
-			AcceptInput = false;
-			EnterRoll();
-			_cameraScript.TogglePlayerCamera(false);
-		}
-
 		private void RollCheck(float timeStep)
 		{
 			// If roll is pressed and the timeout timer is done
@@ -209,13 +217,13 @@ namespace StarterAssets
                 {
 					// Make sure we have enough space to get bigger
 					RaycastHit hit;
-					if(Physics.Raycast(PlayerHead.transform.position, Vector3.down, out hit, _controller.height, GroundLayers))
+					if(Physics.Raycast(PlayerHead.transform.position, Vector3.down, out hit, _controller.height, ObstacleLayers))
 					{
 						Vector3 bottomPoint = hit.point + Vector3.up * 0.05f;
 						Collider[] hits = Physics.OverlapCapsule(bottomPoint + (Vector3.up * _controller.radius), 
 																 bottomPoint + (Vector3.up * _controller.height) - (Vector3.up * _controller.radius), 
 																 _controller.radius, 
-																 GroundLayers);
+																 ObstacleLayers);
 						
 						if(hits.Length != 0)
 						{
@@ -262,7 +270,7 @@ namespace StarterAssets
 
 			// Swap from character controller to rigidbody
 			_rb.detectCollisions = true;
-			_collider.enabled = true;
+			_collider.isTrigger = false;
 			_controller.enabled = false;
 
 			// Set the collider to be a sphere
@@ -491,7 +499,9 @@ namespace StarterAssets
 			}
 			else
 			{
-				_controller.Move(_horizontalSpeed * timeStep + new Vector3(0.0f, _verticalVelocity, 0.0f) * timeStep);
+				Vector3 movement = (_horizontalSpeed + new Vector3(0.0f, _verticalVelocity, 0.0f)) * timeStep;
+        		_rbPusher.PushRigidBodies(movement);
+				_controller.Move(movement);
 			}
 
 			// if the player is moving, face the player in the direction they're moving
@@ -640,7 +650,7 @@ namespace StarterAssets
 
 			// Swap from rigidbody to character controller
 			_rb.detectCollisions = false;
-			_collider.enabled = false;
+			_collider.isTrigger = true;
 			_controller.enabled = true;
 
 			// Finally exit roll mode

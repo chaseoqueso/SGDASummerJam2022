@@ -6,36 +6,37 @@ using UnityEngine.Events;
 
 public class Broom : MobileEnemyBase
 {
-    void OnTriggerEnter(Collider other)
+    [Tooltip("A BoxCollider to reference when simulating the ability 1 hitbox.")]
+    [SerializeField] private BoxCollider Ability1ReferenceHitbox;
+    [Tooltip("A BoxCollider to reference when simulating the ability 2 hitbox.")]
+    [SerializeField] private BoxCollider Ability2ReferenceHitbox;
+
+    public override void TriggerAbility1()
     {
-        // If the other collider belongs to the player
-        if(!IsPossessed() && other.gameObject.layer == LayerMask.NameToLayer("Player"))
+        // Find all players and enemies in the hitbox
+        List<Collider> hits = new List<Collider>(Physics.OverlapBox(Ability1ReferenceHitbox.transform.position + Ability1ReferenceHitbox.transform.rotation * Ability1ReferenceHitbox.center, 
+                                                                    Ability1ReferenceHitbox.size, 
+                                                                    Ability1ReferenceHitbox.transform.rotation, 
+                                                                    LayerMask.GetMask("Player", "Enemy"), 
+                                                                    QueryTriggerInteraction.Collide));
+
+        List<GameObject> hitObjects = hits.ConvertAll<GameObject>((Collider c) => c.gameObject);
+        foreach(GameObject hitObject in hitObjects)
         {
-            // Possess this object
-            if(CurrentState == EnemyState.Attacking)
+            Debug.Log(hitObject);
+            if(hitObject == gameObject) // Don't do anything if the enemy hits itself
             {
-                TransitionState(CurrentState, EnemyState.PossessedAttacking);
+                continue;
+            }
+
+            if(hitObject == StarterAssetsInputs.currentPlayerObject) // If one of the hit objects was the player
+            {
+                Possess(StarterAssetsInputs.currentPlayerObject.GetComponent<ThirdPersonController>()); // Get possessed
             }
             else
             {
-                TransitionState(CurrentState, EnemyState.Possessed);
+                // Kill any enemies and interact with any objects
             }
-
-            // Incapacitate the player
-            ThirdPersonController playerScript = other.GetComponent<ThirdPersonController>();
-            playerScript.IncapacitatePlayer();
-
-            // Reroute input to this script
-			StarterAssetsInputs.currentPlayerObject = gameObject;
-            
-            InputScript = playerScript.InputScript;
-            InputScript.canUseAbilities = true;
-
-            _controller.enabled = true;
-            _agent.enabled = false;
-
-            // Set this as the player's camera
-            _cameraScript.TogglePlayerCamera(true);
         }
     }
 }

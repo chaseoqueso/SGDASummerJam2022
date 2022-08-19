@@ -56,6 +56,7 @@ public abstract class MobileEnemyBase : EnemyBase
     protected NavMeshAgent _agent;
     protected Coroutine _wanderRoutine;
     protected Vector3 _horizontalSpeed;
+    protected BasicRigidBodyPush _rbPusher;
     
     // player
     protected float _targetRotation = 0.0f;
@@ -74,6 +75,7 @@ public abstract class MobileEnemyBase : EnemyBase
         _agent = GetComponent<NavMeshAgent>();
         _controller = GetComponent<CharacterController>();
         _controller.enabled = false;
+        _rbPusher = GetComponent<BasicRigidBodyPush>();
     }
 
     protected override void Update()
@@ -96,6 +98,11 @@ public abstract class MobileEnemyBase : EnemyBase
         {
             _agent.SetDestination(transform.position);
         }
+    }
+
+    protected virtual void FixedUpdate()
+    {
+        _rbPusher.PushRigidBodies(_controller.velocity * Time.fixedDeltaTime);
     }
 
     void LateUpdate()
@@ -146,7 +153,8 @@ public abstract class MobileEnemyBase : EnemyBase
         _horizontalSpeed = Vector3.MoveTowards(_horizontalSpeed, targetSpeed * targetDirection, SpeedChangeRate * Time.deltaTime);
 
         // move the player
-        _controller.Move(_horizontalSpeed * Time.deltaTime + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+        Vector3 movement = (_horizontalSpeed + new Vector3(0.0f, _verticalVelocity, 0.0f)) * Time.deltaTime;
+        _controller.Move(movement);
 
         // if the player is moving, face the player in the direction they're moving
         if(_horizontalSpeed != Vector3.zero)
@@ -194,6 +202,13 @@ public abstract class MobileEnemyBase : EnemyBase
         {
             _verticalVelocity += Gravity * Time.deltaTime;
         }
+    }
+
+    protected override void Possess(ThirdPersonController playerScript)
+    {
+        base.Possess(playerScript);
+        _controller.enabled = true;
+        _agent.enabled = false;
     }
 
     protected override bool CanAttack()

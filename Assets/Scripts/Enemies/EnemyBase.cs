@@ -45,6 +45,9 @@ public abstract class EnemyBase : MonoBehaviour
     protected Coroutine attackRoutine;
     protected float attackTimer;
 
+    public virtual void TriggerAbility1() {}
+    public virtual void TriggerAbility2() {}
+
     protected virtual void Awake()
     {
         _cameraScript = GetComponent<CameraManager>();
@@ -85,12 +88,12 @@ public abstract class EnemyBase : MonoBehaviour
             if(InputScript.ability1 && TransitionState(CurrentState, EnemyState.PossessedAttacking)) // and the player is pressing ability 1, try to transition, and if successful, 
             {
                 InputScript.ability1 = false;
-                attackRoutine = StartCoroutine(UseAbility1(AttackEnded)); // use the attack.
+                attackRoutine = StartCoroutine(Ability1Routine(AttackEnded)); // use the attack.
             }
             else if(InputScript.ability2 && TransitionState(CurrentState, EnemyState.PossessedAttacking))// If the player is pressing ability 2, try to transition, and if successful, 
             {
                 InputScript.ability2 = false;
-                attackRoutine = StartCoroutine(UseAbility2(AttackEnded)); // use the attack.
+                attackRoutine = StartCoroutine(Ability2Routine(AttackEnded)); // use the attack.
             }
         }
     }
@@ -131,11 +134,11 @@ public abstract class EnemyBase : MonoBehaviour
     {
         if(Random.value < abilityRatio) // roll a random number and choose either ability 1
         {
-            attackRoutine = StartCoroutine(UseAbility1(AttackEnded));
+            attackRoutine = StartCoroutine(Ability1Routine(AttackEnded));
         }
         else // or ability 2.
         {
-            attackRoutine = StartCoroutine(UseAbility2(AttackEnded));
+            attackRoutine = StartCoroutine(Ability2Routine(AttackEnded));
         }
     }
 
@@ -162,7 +165,7 @@ public abstract class EnemyBase : MonoBehaviour
         return true;
     }
 
-    protected virtual IEnumerator UseAbility1(UnityAction abilityEndedCallback)
+    protected virtual IEnumerator Ability1Routine(UnityAction abilityEndedCallback)
     {
         _animator.SetTrigger("Ability1");
 
@@ -173,7 +176,7 @@ public abstract class EnemyBase : MonoBehaviour
         abilityEndedCallback.Invoke();
     }
 
-    protected virtual IEnumerator UseAbility2(UnityAction abilityEndedCallback)
+    protected virtual IEnumerator Ability2Routine(UnityAction abilityEndedCallback)
     {
         _animator.SetTrigger("Ability2");
 
@@ -182,5 +185,30 @@ public abstract class EnemyBase : MonoBehaviour
         yield return new WaitUntil(() => _animator.GetCurrentAnimatorStateInfo(0).IsTag("Idle") && !_animator.GetBool("Ability2"));
 
         abilityEndedCallback.Invoke();
+    }
+
+    protected virtual void Possess(ThirdPersonController playerScript)
+    {
+        // Possess this object
+        if(CurrentState == EnemyState.Attacking)
+        {
+            TransitionState(CurrentState, EnemyState.PossessedAttacking);
+        }
+        else
+        {
+            TransitionState(CurrentState, EnemyState.Possessed);
+        }
+
+        // Incapacitate the player
+        playerScript.IncapacitatePlayer();
+
+        // Reroute input to this script
+        StarterAssetsInputs.currentPlayerObject = gameObject;
+        
+        InputScript = playerScript.InputScript;
+        InputScript.canUseAbilities = true;
+
+        // Set this as the player's camera
+        _cameraScript.TogglePlayerCamera(true);
     }
 }
