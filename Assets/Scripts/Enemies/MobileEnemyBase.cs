@@ -129,13 +129,22 @@ public abstract class MobileEnemyBase : EnemyBase
 
                 // Set our speed and look towards our destination
                 _agent.speed = wanderSpeed;
-                Vector3 destVector = _agent.destination - transform.position;
 
+                Vector3 destVector = _agent.destination - transform.position;
                 if(destVector != Vector3.zero)
                 {
                     transform.rotation = Quaternion.LookRotation(destVector, Vector3.up);
                 }
                 break;
+        }
+
+        if(IsPossessed())
+        {
+            _animator.SetFloat("MoveSpeed", _horizontalSpeed.magnitude / wanderSpeed);
+        }
+        else
+        {
+            _animator.SetFloat("MoveSpeed", _agent.velocity.magnitude / wanderSpeed);
         }
     }
 

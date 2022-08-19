@@ -105,11 +105,12 @@ MonoBehaviour:
   AcceptInput: 1
   MoveSpeed: 8
   SpeedChangeRate: 30
-  MaxSpeedDiscrepancy: 5
+  MaxSpeedDiscrepancy: 2
   CurrentState: 0
   RollSpeed: 13
   RollingSpeedChangeRate: 20
   BonusSpeedDecayRate: 5
+  MaximumBonusSpeed: 10
   PlayerHead: {fileID: 2406775303628015353}
   PlayerHeadRadius: 0.5
   JumpHeight: 2
@@ -129,7 +130,7 @@ MonoBehaviour:
     m_Bits: 513
   ObstacleLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1
   BodyParts:
   - {fileID: 3033826441790226152}
   - {fileID: 848023790579799622}

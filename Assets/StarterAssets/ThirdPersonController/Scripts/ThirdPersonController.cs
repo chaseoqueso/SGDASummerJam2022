@@ -46,6 +46,8 @@ namespace StarterAssets
 		public float RollingSpeedChangeRate = 6.0f;
 		[Tooltip("The rate to decay the bonus velocity acquired from rolling down hills.")]
 		public float BonusSpeedDecayRate = 2.0f;
+		[Tooltip("The maximum bonus velocity acquired from rolling down hills.")]
+		public float MaximumBonusSpeed = 10.0f;
 		[Tooltip("The player's head object")]
 		public GameObject PlayerHead;
 		[Tooltip("The radius of the player's head object")]
@@ -115,10 +117,10 @@ namespace StarterAssets
 		private GameObject _mainCamera;
 		private CapsuleCollider _collider;
 		private Rigidbody _rb;
-		private Vector3 _previousPosition;
 		private Vector3 _horizontalSpeed;
 		private Vector3 _bonusVelocity;
 		private Vector3 _groundedNormal;
+		private Vector3 _previousPosition;
 
 		private bool _hasAnimator;
 		private bool _velocityAdded;
@@ -210,6 +212,7 @@ namespace StarterAssets
 				RollCheck(Time.fixedDeltaTime);
 				JumpAndGravity(Time.fixedDeltaTime);
 				GroundedCheck(Time.fixedDeltaTime);
+				CollisionCheck(Time.fixedDeltaTime);
 				Move(Time.fixedDeltaTime);
 			}
 		}
@@ -226,6 +229,42 @@ namespace StarterAssets
 			_animIDJump = Animator.StringToHash("Jump");
 			_animIDFreeFall = Animator.StringToHash("FreeFall");
 			_animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
+		}
+
+		private void CollisionCheck(float timestep)
+		{
+			// If we're rolling, check against the rigidbody's velocity to see if we hit something
+			if(IsRolling && !_velocityAdded)
+			{
+				Vector3 idealVelocity = _horizontalSpeed + _bonusVelocity;
+				if(!Grounded)
+					idealVelocity += Vector3.up * _verticalVelocity;
+
+				// If the velocity we assigned last frame is significantly different from the rigidbody's velocity now
+				if(idealVelocity.magnitude > _rb.velocity.magnitude && (idealVelocity.magnitude - _rb.velocity.magnitude) > MaxSpeedDiscrepancy)
+				{
+					// If we hit something steeper than our slope limit
+					RaycastHit hit;
+					if(Physics.SphereCast(_previousPosition, _collider.radius, idealVelocity, out hit, idealVelocity.magnitude * timestep, ObstacleLayers) && 
+						Vector3.Angle(hit.normal, Vector3.up) > _controller.slopeLimit)
+					{
+						// Accept _rb.velocity as being correct
+						if(_rb.velocity.magnitude > RollSpeed)
+						{
+							_horizontalSpeed = _rb.velocity.normalized * RollSpeed;
+							_bonusVelocity = _rb.velocity - _horizontalSpeed;
+						}
+						else
+						{
+							_horizontalSpeed = _rb.velocity;
+							_bonusVelocity = Vector3.zero;
+						}
+					}
+				}
+			}
+
+			_previousPosition = PlayerHead.transform.position;
+			_velocityAdded = false;
 		}
 
 		private void RollCheck(float timeStep)
@@ -309,23 +348,38 @@ namespace StarterAssets
 					// Recast to get the actual surface normal
                 	hit.collider.Raycast(new Ray(hit.point + hit.normal * 0.01f, -hit.normal), out hit, 0.011f);
 
-					// Convert any downward force into forward velocity based on the slope
-					Vector3 downwardVelocity;
-
-					// If we're falling, use vertical velocity as the down vector
-					if(!Grounded)
+					if(_bonusVelocity.magnitude < MaximumBonusSpeed)
 					{
-						downwardVelocity = Vector3.up * _verticalVelocity;
-					}
-					else
-					{
-						// Otherwise use gravity
-						downwardVelocity = Vector3.up * Gravity * timeStep;
-					}
+						// Convert any downward force into forward velocity based on the slope
+						Vector3 downwardVelocity;
 
-					// Get the component of the downward vector coplanar with the collision surface
-					Vector3 coplanarForce = Vector3.ProjectOnPlane(downwardVelocity, hit.normal);
-					_bonusVelocity += new Vector3(coplanarForce.x, 0, coplanarForce.z);
+						// If we're falling, use vertical velocity as the down vector
+						if(!Grounded)
+						{
+							downwardVelocity = Vector3.up * _verticalVelocity;
+						}
+						else
+						{
+							// Otherwise use gravity
+							downwardVelocity = Vector3.up * Gravity * timeStep;
+						}
+
+						// Get the component of the downward vector coplanar with the collision surface
+						Vector3 coplanarForce = Vector3.ProjectOnPlane(downwardVelocity, hit.normal);
+						coplanarForce.y = 0;
+
+						// If the coplanar slope force is going in a direction other than the direction of our character
+						// (aka, if we're going uphill or sideways on a hill) reduce the velocity by an amount relative to how different it is.
+						Vector3 totalVelocity = _horizontalSpeed + _bonusVelocity;
+						coplanarForce *= Mathf.InverseLerp(-1, 1, (Vector3.Dot(coplanarForce, totalVelocity)));
+
+						_bonusVelocity += coplanarForce;
+
+						if(_bonusVelocity.magnitude > MaximumBonusSpeed)
+						{
+							_bonusVelocity = _bonusVelocity.normalized * MaximumBonusSpeed;
+						}
+					}
 
 					// Only consider this ground if it's within the slope limit
 					Grounded = Vector3.Angle(Vector3.up, hit.normal) < _controller.slopeLimit;
@@ -373,58 +427,17 @@ namespace StarterAssets
 			// if there is no input, set the target speed to 0
 			if (!AcceptInput || InputScript.move == Vector2.zero) targetSpeed = 0.0f;
 
-			// If we're rolling, check against the rigidbody's velocity to see if we hit something
-			if(IsRolling && !_velocityAdded)
-			{
-				// Calculate our true velocity based on our position delta
-				Vector3 trueVelocity = (PlayerHead.transform.position - _previousPosition) / timeStep; 
-
-				// If we're not going uphill (cause uphill sucks)
-				if(trueVelocity.y < 1 || !Grounded)
-				{
-					trueVelocity.y = 0;
-
-					Vector3 idealVelocity = _horizontalSpeed + _bonusVelocity;
-
-					// If the velocity we assigned last frame is significantly different from the rigidbody's velocity now
-					if(idealVelocity.magnitude > trueVelocity.magnitude && (idealVelocity - trueVelocity).magnitude > MaxSpeedDiscrepancy)
-					{
-						// Accept trueVelocity as being correct
-						if(trueVelocity.magnitude > targetSpeed)
-						{
-							_horizontalSpeed = trueVelocity.normalized * targetSpeed;
-							_bonusVelocity = trueVelocity - _horizontalSpeed;
-						}
-						else
-						{
-							_horizontalSpeed = trueVelocity;
-							_bonusVelocity = Vector3.zero;
-						}
-					}
-				}
-				
-				_previousPosition = PlayerHead.transform.position;
-			}
-
-			_velocityAdded = false;
-
 			float inputMagnitude = InputScript.analogMovement ? InputScript.move.magnitude : 1f;
 
 			float speedChangeRate = Grounded ? (IsRolling ? RollingSpeedChangeRate : SpeedChangeRate) : AerialSpeedChangeRate;
-			// float rotationSmoothSpeed = Grounded ? (IsRolling ? RollingRotationSmoothTime : RotationSmoothTime) : AerialRotationSmoothTime;
 
 			// move towards target input direction and magnitude
 			Vector3 input = new Vector3(InputScript.move.x, 0.0f, InputScript.move.y).normalized;
 
-			// note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
 			// if there is a move input rotate player when the player is moving
 			if (InputScript.move != Vector2.zero)
 			{
 				_targetRotation = Mathf.Atan2(input.x, input.z) * Mathf.Rad2Deg + _mainCamera.transform.eulerAngles.y;
-				//float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, rotationSmoothSpeed);
-
-				// rotate to face input direction relative to camera position
-				// transform.rotation = Quaternion.Euler(0.0f, _targetRotation, 0.0f);
 			}
 
 			Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
@@ -506,7 +519,7 @@ namespace StarterAssets
 				_rb.velocity = totalHorizontalVelocity + verticalSpeed;
 
 				// Decay bonus velocity
-				if(_bonusVelocity != Vector3.zero)
+				if(Grounded && _bonusVelocity != Vector3.zero)
 				{
 					float newMagnitude = (_bonusVelocity.magnitude - BonusSpeedDecayRate * timeStep);
 					if(newMagnitude < 0)
