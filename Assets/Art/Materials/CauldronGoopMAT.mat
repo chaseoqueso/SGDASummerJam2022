@@ -34,9 +34,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Darnken: 0.48
+    - _Darnken: 0.56
     - _QueueControl: 0
     - _QueueOffset: 0
+    - _Spin_Multiplyer: 0.5
     - _Steps: 16
     - _Vorinoi_Anim_Speed: 0.8
     - _Vorinoi_Cell_Density: 6.69
