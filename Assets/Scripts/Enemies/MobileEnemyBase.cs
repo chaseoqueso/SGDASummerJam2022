@@ -156,18 +156,6 @@ public abstract class MobileEnemyBase : EnemyBase
         }
     }
 
-    void LateUpdate()
-    {
-        if(IsPossessed())
-        {
-            _cameraScript.CameraRotation(InputScript.look);
-        }
-        else
-        {
-            _cameraScript.SetCameraRotation(transform.eulerAngles.x, transform.eulerAngles.y);
-        }
-    }
-
     protected void GroundedCheck()
     {
         Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);

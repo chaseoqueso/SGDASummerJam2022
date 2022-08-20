@@ -26,6 +26,10 @@ public abstract class EnemyBase : MonoBehaviour
     public float leashRadius = 20f;
     
     [Header("Attack Properties")]
+    [Tooltip("A BoxCollider to reference when simulating the ability 1 hitbox.")]
+    [SerializeField] protected BoxCollider Ability1ReferenceHitbox;
+    [Tooltip("A BoxCollider to reference when simulating the ability 2 hitbox.")]
+    [SerializeField] protected BoxCollider Ability2ReferenceHitbox;
     [Tooltip("The minimum time between enemy attacks.")]
     public float minAttackDelay = 1f;
     [Tooltip("The maximum time between enemy attacks.")]
@@ -47,7 +51,6 @@ public abstract class EnemyBase : MonoBehaviour
     protected float attackTimer;
     protected int lastAttackUsed;
 
-    public virtual void TriggerAbility1() {}
     public virtual void TriggerAbility2() {}
 
     protected virtual void Awake()
@@ -102,6 +105,18 @@ public abstract class EnemyBase : MonoBehaviour
                 InputScript.roll = false;
                 Unpossess();
             }
+        }
+    }
+
+    protected virtual void LateUpdate()
+    {
+        if(IsPossessed())
+        {
+            _cameraScript.CameraRotation(InputScript.look);
+        }
+        else
+        {
+            _cameraScript.SetCameraRotation(transform.eulerAngles.x, transform.eulerAngles.y);
         }
     }
 
@@ -202,6 +217,54 @@ public abstract class EnemyBase : MonoBehaviour
         abilityEndedCallback.Invoke();
     }
 
+    public virtual void TriggerAbility1()
+    {
+        // Find all players and enemies in the hitbox
+        List<Collider> hits = new List<Collider>(Physics.OverlapBox(Ability1ReferenceHitbox.transform.position + Ability1ReferenceHitbox.transform.rotation * Ability1ReferenceHitbox.center, 
+                                                                    Ability1ReferenceHitbox.size, 
+                                                                    Ability1ReferenceHitbox.transform.rotation, 
+                                                                    LayerMask.GetMask("Player", "Enemy", "Interactible"), 
+                                                                    QueryTriggerInteraction.Collide));
+
+        List<GameObject> hitObjects = hits.ConvertAll<GameObject>((Collider c) => c.gameObject);
+        foreach(GameObject hitObject in hitObjects)
+        {
+            if(hitObject == gameObject) // Don't do anything if the enemy hits itself
+            {
+                continue;
+            }
+
+            if(hitObject.layer == LayerMask.NameToLayer("Player")) // If one of the hit objects was the player
+            {
+                Possess(StarterAssetsInputs.currentPlayerObject.GetComponent<ThirdPersonController>()); // Get possessed
+            }
+            else if(hitObject.layer == LayerMask.NameToLayer("Enemy"))
+            {
+                EnemyBase enemyScript = hitObject.GetComponent<EnemyBase>();
+                if(hitObject.TryGetComponent<EnemyBase>(out enemyScript))
+                {
+                    enemyScript.Kill();
+                }
+                else
+                {
+                    Debug.LogError("An object with the Enemy layer did not have a script that inherits from EnemyBase.");
+                }
+            }
+            else if(hitObject.layer == LayerMask.NameToLayer("Interactible"))
+            {
+                IInteractible interactScript;
+                if(hitObject.TryGetComponent<IInteractible>(out interactScript))
+                {
+                    interactScript.OnInteract(gameObject);
+                }
+                else
+                {
+                    Debug.LogError("An object with the Interactible layer did not have a script that inherits from IInteractible.");
+                }
+            }
+        }
+    }
+
     protected virtual void Possess(ThirdPersonController playerScript)
     {
         // Possess this object
@@ -240,7 +303,7 @@ public abstract class EnemyBase : MonoBehaviour
         Kill();
     }
 
-    protected virtual void Kill()
+    public virtual void Kill()
     {
         // This for now
         Destroy(gameObject);
