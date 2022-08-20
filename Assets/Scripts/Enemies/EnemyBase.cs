@@ -41,6 +41,7 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected CameraManager _cameraScript;
     protected GameObject _mainCamera;
+    protected ThirdPersonController _player;
     protected Animator _animator;
     protected Coroutine attackRoutine;
     protected float attackTimer;
@@ -94,6 +95,11 @@ public abstract class EnemyBase : MonoBehaviour
             {
                 InputScript.ability2 = false;
                 attackRoutine = StartCoroutine(Ability2Routine(AttackEnded)); // use the attack.
+            }
+            else if(InputScript.roll)
+            {
+                InputScript.roll = false;
+                Unpossess();
             }
         }
     }
@@ -200,7 +206,8 @@ public abstract class EnemyBase : MonoBehaviour
         }
 
         // Incapacitate the player
-        playerScript.IncapacitatePlayer();
+        _player = playerScript;
+        playerScript.TogglePlayerControl(false);
 
         // Reroute input to this script
         StarterAssetsInputs.currentPlayerObject = gameObject;
@@ -210,5 +217,12 @@ public abstract class EnemyBase : MonoBehaviour
 
         // Set this as the player's camera
         _cameraScript.TogglePlayerCamera(true);
+    }
+
+    protected virtual void Unpossess()
+    {
+        _player.TogglePlayerControl(true);
+
+        Destroy(gameObject);
     }
 }

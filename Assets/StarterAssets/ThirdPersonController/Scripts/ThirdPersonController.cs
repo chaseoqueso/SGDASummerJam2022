@@ -163,11 +163,15 @@ namespace StarterAssets
 			_rollTimeoutDelta = RollTimeout;
 		}
 
-		public void IncapacitatePlayer()
+		public void TogglePlayerControl(bool toggle)
 		{
-			AcceptInput = false;
-			EnterRoll();
-			_cameraScript.TogglePlayerCamera(false);
+			if(!toggle)
+			{
+				EnterRoll();
+			}
+			
+			AcceptInput = toggle;
+			_cameraScript.TogglePlayerCamera(toggle);
 		}
 
 		public void AddVelocity(Vector3 velocity)
@@ -219,7 +223,8 @@ namespace StarterAssets
 
 		private void LateUpdate()
 		{
-			_cameraScript.CameraRotation(InputScript.look);
+			if (AcceptInput)
+				_cameraScript.CameraRotation(InputScript.look);
 		}
 
 		private void AssignAnimationIDs()
@@ -273,7 +278,9 @@ namespace StarterAssets
 			// roll timeout
 			if (_rollTimeoutDelta >= 0.0f)
 			{
-				InputScript.roll = false;
+				if (AcceptInput)
+					InputScript.roll = false;
+
 				_rollTimeoutDelta -= timeStep;
 			}
 		}
@@ -349,7 +356,8 @@ namespace StarterAssets
 				}
 
 				// if we are not grounded, do not jump
-				InputScript.jump = false;
+				if (AcceptInput)
+					InputScript.jump = false;
 			}
 
 			// apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
