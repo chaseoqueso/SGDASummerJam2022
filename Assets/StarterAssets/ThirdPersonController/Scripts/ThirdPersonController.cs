@@ -169,7 +169,7 @@ namespace StarterAssets
 			{
 				EnterRoll();
 			}
-			
+
 			AcceptInput = toggle;
 			_cameraScript.TogglePlayerCamera(toggle);
 		}
@@ -699,7 +699,7 @@ namespace StarterAssets
 				float angle = Vector3.Angle(oldOffset, newOffset);
 				transform.RotateAround(PlayerHead.transform.position, axis, angle);
 
-				yield return null;
+				yield return new WaitForEndOfFrame();
 			}
 
 			// Enable the model
