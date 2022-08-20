@@ -432,6 +432,15 @@ namespace StarterAssets
 					_verticalVelocity = _rb.velocity.y;
 					Grounded = false;
 				}
+
+				if(Grounded)
+				{
+					_rb.angularDrag = 5;
+				}
+				else
+				{
+					_rb.angularDrag = 0;
+				}
 			}
 			else
 			{
@@ -463,21 +472,21 @@ namespace StarterAssets
 				if(Physics.SphereCast(_previousPosition, _collider.radius, idealVelocity, out hit, idealVelocity.magnitude * timestep, ObstacleLayers) && 
 					Vector3.Angle(hit.normal, Vector3.up) > _controller.slopeLimit)
 				{
-					Debug.Log("Bonk");
 					// Accept _rb.velocity as being correct
-					if(_rb.velocity.magnitude > RollSpeed)
+					Vector3 horizontalRbVelocity = new Vector3(_rb.velocity.x, 0, _rb.velocity.z);
+					if(horizontalRbVelocity.magnitude > RollSpeed)
 					{
-						_horizontalSpeed = _rb.velocity.normalized * RollSpeed;
-						_bonusVelocity = _rb.velocity - _horizontalSpeed;
+						_horizontalSpeed = horizontalRbVelocity.normalized * RollSpeed;
+						_bonusVelocity = horizontalRbVelocity - _horizontalSpeed;
 					}
 					else
 					{
-						_horizontalSpeed = _rb.velocity;
+						_horizontalSpeed = horizontalRbVelocity;
 						_bonusVelocity = Vector3.zero;
 					}
 					
 					// Decreases the vertical velocity based on the impact
-					_verticalVelocity += (Vector3.Project(hit.normal, Vector3.up) * Vector3.Dot(idealVelocity.normalized, hit.normal) * _verticalVelocity).y;
+					_verticalVelocity -= Vector3.Project(Vector3.Project(_rb.velocity, hit.normal), Vector3.up).y;
 				}
 			}
 
