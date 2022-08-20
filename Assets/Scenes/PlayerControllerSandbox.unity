@@ -2095,6 +2095,10 @@ PrefabInstance:
       propertyPath: MaxSpeedDiscrepancy
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6812820357998572095, guid: bff86167821fac64482efc831eee094e, type: 3}
+      propertyPath: m_Material
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bff86167821fac64482efc831eee094e, type: 3}
 --- !u!1001 &4892833188843898103

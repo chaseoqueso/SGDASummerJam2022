@@ -231,42 +231,6 @@ namespace StarterAssets
 			_animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
 		}
 
-		private void CollisionCheck(float timestep)
-		{
-			// If we're rolling, check against the rigidbody's velocity to see if we hit something
-			if(IsRolling && !_velocityAdded)
-			{
-				Vector3 idealVelocity = _horizontalSpeed + _bonusVelocity;
-				if(!Grounded)
-					idealVelocity += Vector3.up * _verticalVelocity;
-
-				// If the velocity we assigned last frame is significantly different from the rigidbody's velocity now
-				if(idealVelocity.magnitude > _rb.velocity.magnitude && (idealVelocity.magnitude - _rb.velocity.magnitude) > MaxSpeedDiscrepancy)
-				{
-					// If we hit something steeper than our slope limit
-					RaycastHit hit;
-					if(Physics.SphereCast(_previousPosition, _collider.radius, idealVelocity, out hit, idealVelocity.magnitude * timestep, ObstacleLayers) && 
-						Vector3.Angle(hit.normal, Vector3.up) > _controller.slopeLimit)
-					{
-						// Accept _rb.velocity as being correct
-						if(_rb.velocity.magnitude > RollSpeed)
-						{
-							_horizontalSpeed = _rb.velocity.normalized * RollSpeed;
-							_bonusVelocity = _rb.velocity - _horizontalSpeed;
-						}
-						else
-						{
-							_horizontalSpeed = _rb.velocity;
-							_bonusVelocity = Vector3.zero;
-						}
-					}
-				}
-			}
-
-			_previousPosition = PlayerHead.transform.position;
-			_velocityAdded = false;
-		}
-
 		private void RollCheck(float timeStep)
 		{
 			// If roll is pressed and the timeout timer is done
@@ -314,27 +278,85 @@ namespace StarterAssets
 			}
 		}
 
-		private void EnterRoll()
+		private void JumpAndGravity(float timeStep)
 		{
-			CurrentState = PlayerState.Rolling;
-
-			// Transfer all velocity into the rigidbody
-			_rb.velocity = _controller.velocity;
-
-			// Disable the ghost body
-			foreach (GameObject model in BodyParts)
+			if (Grounded)
 			{
-				model.SetActive(false);
+				// reset the fall timeout timer
+				_fallTimeoutDelta = FallTimeout;
+
+				// update animator if using character
+				if (_hasAnimator)
+				{
+					_animator.SetBool(_animIDJump, false);
+					_animator.SetBool(_animIDFreeFall, false);
+				}
+
+				// stop our velocity dropping infinitely when grounded
+				if (_verticalVelocity < 0)
+				{
+					if(IsRolling)
+					{
+						_verticalVelocity = 0;
+					}
+					else
+					{
+						_verticalVelocity = -500f;
+					}
+				}
+
+				// Jump
+				if (AcceptInput && InputScript.jump && _jumpTimeoutDelta <= 0.0f)
+				{
+					// the square root of H * -2 * G = how much velocity needed to reach desired height
+					_verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+
+					// update animator if using character
+					if (_hasAnimator)
+					{
+						_animator.SetBool(_animIDJump, true);
+					}
+				}
+
+				// jump timeout
+				if (_jumpTimeoutDelta >= 0.0f)
+				{
+					_jumpTimeoutDelta -= timeStep;
+				}
+			}
+			else
+			{
+				// reset the jump timeout timer
+				_jumpTimeoutDelta = JumpTimeout;
+
+				// fall timeout
+				if (_fallTimeoutDelta >= 0.0f)
+				{
+					_fallTimeoutDelta -= timeStep;
+
+					if (_verticalVelocity < 0)
+					{
+						_verticalVelocity = 0;
+					}
+				}
+				else
+				{
+					// update animator if using character
+					if (_hasAnimator)
+					{
+						_animator.SetBool(_animIDFreeFall, true);
+					}
+				}
+
+				// if we are not grounded, do not jump
+				InputScript.jump = false;
 			}
 
-			// Swap from character controller to rigidbody
-			_rb.detectCollisions = true;
-			_collider.isTrigger = false;
-			_controller.enabled = false;
-
-			// Set the collider to be a sphere
-			_collider.height = PlayerHeadRadius * 2;
-			_collider.center = new Vector3(0, PlayerHeadRadius * 2, 0);
+			// apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
+			if (_verticalVelocity < _terminalVelocity)
+			{
+				_verticalVelocity += Gravity * timeStep;
+			}
 		}
 
 		private void GroundedCheck(float timeStep)
@@ -364,24 +386,29 @@ namespace StarterAssets
 							downwardVelocity = Vector3.up * Gravity * timeStep;
 						}
 
-						// Get the component of the downward vector coplanar with the collision surface
-						Vector3 coplanarForce = Vector3.ProjectOnPlane(downwardVelocity, hit.normal);
-						coplanarForce.y = 0;
-
-						// If the coplanar slope force is going in a direction other than the direction of our character
-						// (aka, if we're going uphill or sideways on a hill) reduce the velocity by an amount relative to how different it is.
-						Vector3 totalVelocity = _horizontalSpeed + _bonusVelocity;
-						coplanarForce *= Mathf.InverseLerp(-1, 1, (Vector3.Dot(coplanarForce, totalVelocity)));
-
-						_bonusVelocity += coplanarForce;
-
-						if(_bonusVelocity.magnitude > MaximumBonusSpeed)
+						// Only add velocity if we're going down
+						if(downwardVelocity.y < 0)
 						{
-							_bonusVelocity = _bonusVelocity.normalized * MaximumBonusSpeed;
+							// Get the component of the downward vector coplanar with the collision surface
+							Vector3 coplanarForce = Vector3.ProjectOnPlane(downwardVelocity, hit.normal);
+							coplanarForce.y = 0;
+
+							// If the coplanar slope force is going in a direction other than the direction of our character
+							// (aka, if we're going uphill or sideways on a hill) reduce the velocity by an amount relative to how different it is.
+							Vector3 totalVelocity = _horizontalSpeed + _bonusVelocity;
+							coplanarForce *= Mathf.InverseLerp(-1, 1, (Vector3.Dot(coplanarForce, totalVelocity)));
+
+							_bonusVelocity += coplanarForce;
+
+							if(_bonusVelocity.magnitude > MaximumBonusSpeed)
+							{
+								_bonusVelocity = _bonusVelocity.normalized * MaximumBonusSpeed;
+							}
 						}
 					}
 
 					// Only consider this ground if it's within the slope limit
+					bool wasGrounded = Grounded;
 					Grounded = Vector3.Angle(Vector3.up, hit.normal) < _controller.slopeLimit;
 
 					// Update the ground normal
@@ -392,7 +419,11 @@ namespace StarterAssets
 					else
 					{
 						_groundedNormal = Vector3.zero;
-						_verticalVelocity = _rb.velocity.y;
+
+						if(wasGrounded)
+						{
+							_verticalVelocity = _rb.velocity.y;
+						}
 					}
 				}
 				else if(Grounded)
@@ -416,6 +447,42 @@ namespace StarterAssets
 			{
 				_animator.SetBool(_animIDGrounded, Grounded);
 			}
+		}
+
+		private void CollisionCheck(float timestep)
+		{
+			// If we're rolling, check against the rigidbody's velocity to see if we hit something
+			if(IsRolling && !_velocityAdded)
+			{
+				Vector3 idealVelocity = _horizontalSpeed + _bonusVelocity;
+				if(!Grounded)
+					idealVelocity += Vector3.up * _verticalVelocity;
+
+				// If we hit something steeper than our slope limit
+				RaycastHit hit;
+				if(Physics.SphereCast(_previousPosition, _collider.radius, idealVelocity, out hit, idealVelocity.magnitude * timestep, ObstacleLayers) && 
+					Vector3.Angle(hit.normal, Vector3.up) > _controller.slopeLimit)
+				{
+					Debug.Log("Bonk");
+					// Accept _rb.velocity as being correct
+					if(_rb.velocity.magnitude > RollSpeed)
+					{
+						_horizontalSpeed = _rb.velocity.normalized * RollSpeed;
+						_bonusVelocity = _rb.velocity - _horizontalSpeed;
+					}
+					else
+					{
+						_horizontalSpeed = _rb.velocity;
+						_bonusVelocity = Vector3.zero;
+					}
+					
+					// Decreases the vertical velocity based on the impact
+					_verticalVelocity += (Vector3.Project(hit.normal, Vector3.up) * Vector3.Dot(idealVelocity.normalized, hit.normal) * _verticalVelocity).y;
+				}
+			}
+
+			_previousPosition = PlayerHead.transform.position;
+			_velocityAdded = false;
 		}
 
 		private void Move(float timeStep)
@@ -553,85 +620,27 @@ namespace StarterAssets
 			}
 		}
 
-		private void JumpAndGravity(float timeStep)
+		private void EnterRoll()
 		{
-			if (Grounded)
+			CurrentState = PlayerState.Rolling;
+
+			// Transfer all velocity into the rigidbody
+			_rb.velocity = _controller.velocity;
+
+			// Disable the ghost body
+			foreach (GameObject model in BodyParts)
 			{
-				// reset the fall timeout timer
-				_fallTimeoutDelta = FallTimeout;
-
-				// update animator if using character
-				if (_hasAnimator)
-				{
-					_animator.SetBool(_animIDJump, false);
-					_animator.SetBool(_animIDFreeFall, false);
-				}
-
-				// stop our velocity dropping infinitely when grounded
-				if (_verticalVelocity < 0)
-				{
-					if(IsRolling)
-					{
-						_verticalVelocity = 0;
-					}
-					else
-					{
-						_verticalVelocity = -500f;
-					}
-				}
-
-				// Jump
-				if (AcceptInput && InputScript.jump && _jumpTimeoutDelta <= 0.0f)
-				{
-					// the square root of H * -2 * G = how much velocity needed to reach desired height
-					_verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
-
-					// update animator if using character
-					if (_hasAnimator)
-					{
-						_animator.SetBool(_animIDJump, true);
-					}
-				}
-
-				// jump timeout
-				if (_jumpTimeoutDelta >= 0.0f)
-				{
-					_jumpTimeoutDelta -= timeStep;
-				}
-			}
-			else
-			{
-				// reset the jump timeout timer
-				_jumpTimeoutDelta = JumpTimeout;
-
-				// fall timeout
-				if (_fallTimeoutDelta >= 0.0f)
-				{
-					_fallTimeoutDelta -= timeStep;
-
-					if (_verticalVelocity < 0)
-					{
-						_verticalVelocity = 0;
-					}
-				}
-				else
-				{
-					// update animator if using character
-					if (_hasAnimator)
-					{
-						_animator.SetBool(_animIDFreeFall, true);
-					}
-				}
-
-				// if we are not grounded, do not jump
-				InputScript.jump = false;
+				model.SetActive(false);
 			}
 
-			// apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
-			if (_verticalVelocity < _terminalVelocity)
-			{
-				_verticalVelocity += Gravity * timeStep;
-			}
+			// Swap from character controller to rigidbody
+			_rb.detectCollisions = true;
+			_collider.isTrigger = false;
+			_controller.enabled = false;
+
+			// Set the collider to be a sphere
+			_collider.height = PlayerHeadRadius * 2;
+			_collider.center = new Vector3(0, PlayerHeadRadius * 2, 0);
 		}
 
 		private IEnumerator ExitRollRoutine()
