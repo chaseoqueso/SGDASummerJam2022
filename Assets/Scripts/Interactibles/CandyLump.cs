@@ -11,7 +11,7 @@ public class CandyLump : MonoBehaviour, IInteractible
 
     public void OnInteract(GameObject interactor)
     {
-        int numCandies = Random.Range(numCandyRange.x, numCandyRange.y);
+        int numCandies = Random.Range(numCandyRange.x, numCandyRange.y + 1);
         for(int i = 0; i < numCandies; i++)
         {
             Vector3 velocity = Vector3.up * candyVelocity;

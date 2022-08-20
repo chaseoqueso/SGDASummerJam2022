@@ -45,6 +45,7 @@ public abstract class EnemyBase : MonoBehaviour
     protected Animator _animator;
     protected Coroutine attackRoutine;
     protected float attackTimer;
+    protected int lastAttackUsed;
 
     public virtual void TriggerAbility1() {}
     public virtual void TriggerAbility2() {}
@@ -138,13 +139,21 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected virtual void StartAttack()
     {
-        if(Random.value < abilityRatio) // roll a random number and choose either ability 1
+        float randomValue = Random.value;
+
+        // Reroll if we roll the same attack as last time
+        if(lastAttackUsed == 1 && randomValue < abilityRatio || lastAttackUsed == 2 && randomValue >= abilityRatio)
+            randomValue = Random.value;
+
+        if(randomValue < abilityRatio) // roll a random number and choose either ability 1
         {
             attackRoutine = StartCoroutine(Ability1Routine(AttackEnded));
+            lastAttackUsed = 1;
         }
         else // or ability 2.
         {
             attackRoutine = StartCoroutine(Ability2Routine(AttackEnded));
+            lastAttackUsed = 2;
         }
     }
 
