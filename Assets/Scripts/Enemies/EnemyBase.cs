@@ -221,8 +221,19 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected virtual void Unpossess()
     {
+        // Give the player control
         _player.TogglePlayerControl(true);
 
+        // Update the current player
+        StarterAssetsInputs.currentPlayerObject = _player.gameObject;
+
+        // Kill the enemy
+        Kill();
+    }
+
+    protected virtual void Kill()
+    {
+        // This for now
         Destroy(gameObject);
     }
 }
