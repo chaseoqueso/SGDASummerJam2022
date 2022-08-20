@@ -22,7 +22,7 @@ public class Broom : MobileEnemyBase
         List<Collider> hits = new List<Collider>(Physics.OverlapBox(Ability1ReferenceHitbox.transform.position + Ability1ReferenceHitbox.transform.rotation * Ability1ReferenceHitbox.center, 
                                                                     Ability1ReferenceHitbox.size, 
                                                                     Ability1ReferenceHitbox.transform.rotation, 
-                                                                    LayerMask.GetMask("Player", "Enemy"), 
+                                                                    LayerMask.GetMask("Player", "Enemy", "Interactible"), 
                                                                     QueryTriggerInteraction.Collide));
 
         List<GameObject> hitObjects = hits.ConvertAll<GameObject>((Collider c) => c.gameObject);
@@ -33,13 +33,25 @@ public class Broom : MobileEnemyBase
                 continue;
             }
 
-            if(hitObject == StarterAssetsInputs.currentPlayerObject) // If one of the hit objects was the player
+            if(hitObject.layer == LayerMask.NameToLayer("Player")) // If one of the hit objects was the player
             {
                 Possess(StarterAssetsInputs.currentPlayerObject.GetComponent<ThirdPersonController>()); // Get possessed
             }
-            else
+            else if(hitObject.layer == LayerMask.NameToLayer("Enemy"))
             {
-                // Kill any enemies and interact with any objects
+                // Kill any enemies
+            }
+            else if(hitObject.layer == LayerMask.NameToLayer("Interactible"))
+            {
+                IInteractible interactScript = hitObject.GetComponent<IInteractible>();
+                if(interactScript == null)
+                {
+                    Debug.LogError("An object with the Interactible layer did not have a script that inherits from IInteractible.");
+                }
+                else
+                {
+                    interactScript.OnInteract(gameObject);
+                }
             }
         }
     }

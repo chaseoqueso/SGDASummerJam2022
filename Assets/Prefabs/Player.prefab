@@ -28,9 +28,10 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 8442733247385236524}
   - {fileID: 2684430516339473771}
   m_Father: {fileID: 3501362555228739530}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4313470006470053232
 GameObject:
@@ -66,7 +67,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8442733247385236524}
   - {fileID: 2406775303628015358}
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -199,6 +199,9 @@ MonoBehaviour:
   TopClamp: 70
   BottomClamp: -30
   CameraAngleOverride: 0
+  WalkOffset: {x: 0, y: 1, z: 0}
+  RollOffset: {x: 0, y: 0, z: 0}
+  CameraPositionSeekSpeed: 2
   LockCameraPosition: 0
   InitializeAsPlayerCamera: 1
 --- !u!1 &8442733247385236523
@@ -225,11 +228,11 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8442733247385236523}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 3501362555228739530}
+  m_Father: {fileID: 2406775303628015358}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2507302305101814400
@@ -241,7 +244,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 41c0551de3564f14bac36ea7c34b8e3c, type: 3}
       propertyPath: m_RootOrder
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 41c0551de3564f14bac36ea7c34b8e3c, type: 3}
       propertyPath: m_LocalScale.x

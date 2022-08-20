@@ -223,8 +223,7 @@ namespace StarterAssets
 
 		private void LateUpdate()
 		{
-			if (AcceptInput)
-				_cameraScript.CameraRotation(InputScript.look);
+			_cameraScript.CameraRotation(InputScript.look, IsRolling);
 		}
 
 		private void AssignAnimationIDs()

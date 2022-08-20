@@ -195,6 +195,9 @@ MonoBehaviour:
   TopClamp: 70
   BottomClamp: -30
   CameraAngleOverride: 0
+  WalkOffset: {x: 0, y: 2, z: 0}
+  RollOffset: {x: 0, y: 0, z: 0}
+  CameraPositionSeekSpeed: 1
   LockCameraPosition: 0
   InitializeAsPlayerCamera: 0
 --- !u!114 &5082365911639848597

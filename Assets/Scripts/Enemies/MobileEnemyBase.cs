@@ -158,9 +158,13 @@ public abstract class MobileEnemyBase : EnemyBase
 
     void LateUpdate()
     {
-        if(CurrentState == EnemyState.Possessed)
+        if(IsPossessed())
         {
             _cameraScript.CameraRotation(InputScript.look);
+        }
+        else
+        {
+            _cameraScript.SetCameraRotation(transform.eulerAngles.x, transform.eulerAngles.y);
         }
     }
 
