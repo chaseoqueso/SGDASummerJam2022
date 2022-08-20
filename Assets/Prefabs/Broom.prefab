@@ -178,6 +178,8 @@ MonoBehaviour:
   Ability2ReferenceHitbox: {fileID: 1419294460}
   KnockbackForce: 15
   KnockupForce: 5
+  PossessedKnockbackForce: 20
+  PossessedKnockupForce: 5
 --- !u!114 &4892833188912340026
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -15,6 +15,10 @@ public class Broom : MobileEnemyBase
     [SerializeField] private float KnockbackForce = 10f;
     [Tooltip("The strength of vertical knockback when hitting the player.")]
     [SerializeField] private float KnockupForce = 5f;
+    [Tooltip("The strength of horizontal knockback when hitting things while possessed.")]
+    [SerializeField] private float PossessedKnockbackForce = 10f;
+    [Tooltip("The strength of vertical knockback when hitting things while possessed.")]
+    [SerializeField] private float PossessedKnockupForce = 5f;
 
     public override void TriggerAbility1()
     {
@@ -71,7 +75,9 @@ public class Broom : MobileEnemyBase
 
             // Force it into a roll and knock it away
             playerScript.ForceRoll();
-            playerScript.AddVelocity(transform.forward * KnockbackForce + Vector3.up * KnockupForce);
+            float currentKnockbackForce = IsPossessed() ? PossessedKnockbackForce : KnockbackForce;
+            float currentKnockupForce = IsPossessed() ? PossessedKnockupForce : KnockupForce;
+            playerScript.AddVelocity(transform.forward * currentKnockbackForce + Vector3.up * currentKnockupForce);
         }
     }
 }
