@@ -54,10 +54,11 @@ public abstract class MobileEnemyBase : EnemyBase
 
     protected CharacterController _controller;
     protected NavMeshAgent _agent;
-    protected Coroutine _wanderRoutine;
-    protected Vector3 _horizontalSpeed;
-    protected Vector3 _spawnPoint;
     protected BasicRigidBodyPush _rbPusher;
+    protected EnemySpawner _spawner;
+    protected Coroutine _wanderRoutine;
+    protected Transform _spawnPoint;
+    protected Vector3 _horizontalSpeed;
     
     // player
     protected float _targetRotation = 0.0f;
@@ -77,7 +78,13 @@ public abstract class MobileEnemyBase : EnemyBase
         _controller = GetComponent<CharacterController>();
         _controller.enabled = false;
         _rbPusher = GetComponent<BasicRigidBodyPush>();
-        _spawnPoint = transform.position;
+    }
+
+    public virtual void Initialize(Transform spawnPoint, EnemySpawner spawner)
+    {
+        _spawnPoint = spawnPoint;
+        _spawner = spawner;
+        TransitionState(CurrentState, EnemyState.Leash);
     }
 
     protected override void Update()
@@ -112,17 +119,17 @@ public abstract class MobileEnemyBase : EnemyBase
             case EnemyState.Leash: // If leashed
             
                 // Go back to spawn and move at leash speed
-                _agent.SetDestination(_spawnPoint);
+                _agent.SetDestination(_spawnPoint.position);
                 _agent.speed = leashSpeed;
 
                 // If we're within wander radius, return to wander mode
-                if(Vector3.Distance(transform.position, _spawnPoint) < wanderRadius)
+                if(Vector3.Distance(transform.position, _spawnPoint.position) < wanderRadius)
                 {
                     TransitionState(CurrentState, EnemyState.Wander);
                 }
                 
                 // Rotate towards spawn
-                transform.rotation = Quaternion.LookRotation(_spawnPoint - transform.position, Vector3.up);
+                transform.rotation = Quaternion.LookRotation(_spawnPoint.position - transform.position, Vector3.up);
                 break;
 
             case EnemyState.Wander: // If wandering
@@ -261,7 +268,18 @@ public abstract class MobileEnemyBase : EnemyBase
 
     protected override bool ShouldLeash()
     {
-        return (Vector3.Distance(StarterAssetsInputs.currentPlayerObject.transform.position, _spawnPoint) > leashRadius ||
-                Vector3.Distance(transform.position, _spawnPoint) > leashRadius);
+        return (Vector3.Distance(StarterAssetsInputs.currentPlayerObject.transform.position, _spawnPoint.position) > leashRadius ||
+                Vector3.Distance(transform.position, _spawnPoint.position) > leashRadius);
+    }
+
+    public override void Kill()
+    {
+        // Alert the enemy spawner that this enemy has been killed
+        if(_spawner != null)
+        {
+            _spawner.RemoveEnemy(this);
+        }
+
+        base.Kill();
     }
 }

@@ -245,7 +245,7 @@ namespace StarterAssets
                 if (CurrentState == PlayerState.Rolling)
                 {
 					// Make sure we have enough space to get bigger
-					Vector3 bottomPoint = PlayerHead.transform.position - Vector3.up * PlayerHeadRadius;
+					Vector3 bottomPoint = PlayerHead.transform.position + Vector3.down * (PlayerHeadRadius - 0.01f);
 					Collider[] hits = Physics.OverlapCapsule(bottomPoint + (Vector3.up * _controller.radius), 
 															bottomPoint + (Vector3.up * _controller.height) - (Vector3.up * _controller.radius), 
 															_controller.radius, 

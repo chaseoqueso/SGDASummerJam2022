@@ -82,6 +82,7 @@ public class SpookyTree : StationaryEnemyBase
         _cameraScript.TogglePlayerCamera(false);
         _aimCameraScript.SetCameraRotation(transform.eulerAngles.y, 0);
         _aimCameraScript.TogglePlayerCamera(true);
+        UIManager.instance.ToggleCrosshairOverlay(true);
 
         while(!InputScript.ability1 && !InputScript.ability2)
         {
@@ -107,6 +108,7 @@ public class SpookyTree : StationaryEnemyBase
             yield return null;
         }
 
+        UIManager.instance.ToggleCrosshairOverlay(false);
         attackRoutine = StartCoroutine(ThrowRoutine(_callback));
     } 
 
