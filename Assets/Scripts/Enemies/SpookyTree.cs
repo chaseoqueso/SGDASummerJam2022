@@ -142,7 +142,8 @@ public class SpookyTree : StationaryEnemyBase
 
     public override void Kill()
     {
-        // Reset enemy
-        TransitionState(CurrentState, EnemyState.Idle);
+        // Don't destroy the tree, unpossess it instead
+        if(IsPossessed())
+            Unpossess();
     }
 }

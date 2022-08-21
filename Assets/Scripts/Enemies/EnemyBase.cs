@@ -107,7 +107,7 @@ public abstract class EnemyBase : MonoBehaviour
             else if(InputScript.roll)
             {
                 InputScript.roll = false;
-                Unpossess();
+                Kill();
             }
         }
     }
@@ -308,12 +308,15 @@ public abstract class EnemyBase : MonoBehaviour
         StarterAssetsInputs.currentPlayerObject = _player.gameObject;
         InputScript.canUseAbilities = false;
 
-        // Kill the enemy
-        Kill();
+        // Reset enemy
+        TransitionState(CurrentState, EnemyState.Idle);
     }
 
     public virtual void Kill()
     {
+        if(IsPossessed())
+            Unpossess();
+
         // This for now
         Destroy(gameObject);
     }
