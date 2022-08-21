@@ -176,9 +176,9 @@ MonoBehaviour:
   FallTimeout: 0.05
   Ability1ReferenceHitbox: {fileID: 1419294460}
   Ability2ReferenceHitbox: {fileID: 1419294460}
-  KnockbackForce: 15
+  KnockbackForce: 10
   KnockupForce: 5
-  PossessedKnockbackForce: 20
+  PossessedKnockbackForce: 25
   PossessedKnockupForce: 5
 --- !u!114 &4892833188912340026
 MonoBehaviour:
