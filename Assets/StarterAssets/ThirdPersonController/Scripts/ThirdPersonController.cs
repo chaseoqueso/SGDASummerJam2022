@@ -14,7 +14,7 @@ namespace StarterAssets
 	{
 		Walking,
 		Rolling,
-		ExitingRoll
+		Immobile
 	}
 
 	[RequireComponent(typeof(CameraManager))]
@@ -125,8 +125,7 @@ namespace StarterAssets
 		private bool _hasAnimator;
 		private bool _velocityAdded;
 
-		private bool IsRolling { get { return CurrentState == PlayerState.Rolling; } }
-		private bool CanMove { get { return CurrentState != PlayerState.ExitingRoll; }}
+		private bool CanMove { get { return CurrentState != PlayerState.Immobile; }}
 
 		private void Awake()
 		{
@@ -190,7 +189,7 @@ namespace StarterAssets
 
 		public void ForceRoll()
 		{
-			if(!IsRolling)
+			if(CurrentState != PlayerState.Rolling)
 			{
 				EnterRoll();
 			}
@@ -211,7 +210,7 @@ namespace StarterAssets
 
 		private void FixedUpdate()
 		{
-			if(CanMove && IsRolling)
+			if(CanMove && CurrentState == PlayerState.Rolling)
 			{
 				RollCheck(Time.fixedDeltaTime);
 				JumpAndGravity(Time.fixedDeltaTime);
@@ -223,7 +222,7 @@ namespace StarterAssets
 
 		private void LateUpdate()
 		{
-			_cameraScript.CameraRotation(InputScript.look, IsRolling);
+			_cameraScript.CameraRotation(InputScript.look, CurrentState == PlayerState.Rolling);
 		}
 
 		private void AssignAnimationIDs()
@@ -240,7 +239,7 @@ namespace StarterAssets
 			// If roll is pressed and the timeout timer is done
 			if (AcceptInput && InputScript.roll && _rollTimeoutDelta <= 0.0f)
 			{
-                if (IsRolling)
+                if (CurrentState == PlayerState.Rolling)
                 {
 					// Make sure we have enough space to get bigger
 					RaycastHit hit;
@@ -301,7 +300,7 @@ namespace StarterAssets
 				// stop our velocity dropping infinitely when grounded
 				if (_verticalVelocity < 0)
 				{
-					if(IsRolling)
+					if(CurrentState == PlayerState.Rolling)
 					{
 						_verticalVelocity = 0;
 					}
@@ -369,7 +368,7 @@ namespace StarterAssets
 		private void GroundedCheck(float timeStep)
 		{
 			// If rolling, use a sphereCast
-			if(IsRolling)
+			if(CurrentState == PlayerState.Rolling)
 			{
 				RaycastHit hit;
 				if(Physics.SphereCast(PlayerHead.transform.position, RollingGroundedRadius, Vector3.down, out hit, RollingGroundedDistance, GroundLayers))
@@ -468,7 +467,7 @@ namespace StarterAssets
 		private void CollisionCheck(float timestep)
 		{
 			// If we're rolling, check against the rigidbody's velocity to see if we hit something
-			if(IsRolling && !_velocityAdded)
+			if(CurrentState == PlayerState.Rolling && !_velocityAdded)
 			{
 				Vector3 idealVelocity = _horizontalSpeed + _bonusVelocity;
 				if(!Grounded)
@@ -504,7 +503,7 @@ namespace StarterAssets
 		private void Move(float timeStep)
 		{
 			// set target speed based on move speed
-			float targetSpeed = IsRolling ? RollSpeed : MoveSpeed;
+			float targetSpeed = CurrentState == PlayerState.Rolling ? RollSpeed : MoveSpeed;
 
 			// note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
 			// if there is no input, set the target speed to 0
@@ -512,7 +511,7 @@ namespace StarterAssets
 
 			float inputMagnitude = InputScript.analogMovement ? InputScript.move.magnitude : 1f;
 
-			float speedChangeRate = Grounded ? (IsRolling ? RollingSpeedChangeRate : SpeedChangeRate) : AerialSpeedChangeRate;
+			float speedChangeRate = Grounded ? (CurrentState == PlayerState.Rolling ? RollingSpeedChangeRate : SpeedChangeRate) : AerialSpeedChangeRate;
 
 			// move towards target input direction and magnitude
 			Vector3 input = new Vector3(InputScript.move.x, 0.0f, InputScript.move.y).normalized;
@@ -554,7 +553,7 @@ namespace StarterAssets
 			_animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, timeStep * speedChangeRate);
 
 			// move the player
-			if(IsRolling)
+			if(CurrentState == PlayerState.Rolling)
 			{
 				Vector3 totalHorizontalVelocity = _horizontalSpeed + _bonusVelocity;
 				// Choose vertical speed based on if we're grounded or jumping/falling
@@ -623,7 +622,7 @@ namespace StarterAssets
 			}
 
 			// if the player is moving, face the player in the direction they're moving
-			if(_horizontalSpeed != Vector3.zero && !IsRolling)
+			if(_horizontalSpeed != Vector3.zero && CurrentState != PlayerState.Rolling)
 			{
 				transform.rotation = Quaternion.LookRotation(_horizontalSpeed, Vector3.up);
 			}
@@ -661,7 +660,7 @@ namespace StarterAssets
 
 		private IEnumerator ExitRollRoutine()
 		{
-			CurrentState = PlayerState.ExitingRoll;
+			CurrentState = PlayerState.Immobile;
 			float progress = 0;
 
 			// Grab the current rotation
@@ -726,7 +725,7 @@ namespace StarterAssets
 			else Gizmos.color = transparentRed;
 			
 			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
-			if(IsRolling)
+			if(CurrentState == PlayerState.Rolling)
 			{
 				Gizmos.DrawSphere(new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - RollingGroundedDistance, PlayerHead.transform.position.z), RollingGroundedRadius);
 			}
