@@ -337,25 +337,6 @@ namespace StarterAssets
 				// reset the jump timeout timer
 				_jumpTimeoutDelta = JumpTimeout;
 
-				// fall timeout
-				if (_fallTimeoutDelta >= 0.0f)
-				{
-					_fallTimeoutDelta -= timeStep;
-
-					if (_verticalVelocity < 0)
-					{
-						_verticalVelocity = 0;
-					}
-				}
-				else
-				{
-					// update animator if using character
-					if (_hasAnimator)
-					{
-						_animator.SetBool(_animIDFreeFall, true);
-					}
-				}
-
 				// if we are not grounded, do not jump
 				if (AcceptInput)
 					InputScript.jump = false;
@@ -377,7 +358,8 @@ namespace StarterAssets
 				if(Physics.SphereCast(PlayerHead.transform.position, RollingGroundedRadius, Vector3.down, out hit, RollingGroundedDistance, GroundLayers))
 				{
 					// Recast to get the actual surface normal
-                	hit.collider.Raycast(new Ray(hit.point + hit.normal * 0.01f, -hit.normal), out hit, 0.011f);
+					RaycastHit recastHit;
+                	hit.collider.Raycast(new Ray(hit.point + Vector3.up * 0.001f, -hit.normal), out recastHit, 0.011f);
 
 					if(_bonusVelocity.magnitude < MaximumBonusSpeed)
 					{
@@ -399,7 +381,7 @@ namespace StarterAssets
 						if(downwardVelocity.y < 0)
 						{
 							// Get the component of the downward vector coplanar with the collision surface
-							Vector3 coplanarForce = Vector3.ProjectOnPlane(downwardVelocity, hit.normal);
+							Vector3 coplanarForce = Vector3.ProjectOnPlane(downwardVelocity, recastHit.normal);
 							coplanarForce.y = 0;
 
 							// If the coplanar slope force is going in a direction other than the direction of our character
@@ -455,8 +437,14 @@ namespace StarterAssets
 			{
 				// Otherwise just CheckSphere
 
+				bool wasGrounded = Grounded;
+
 				Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
 				Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
+
+				// If we walked off an edge, set our vertical velocity to a value that won't spike us into the ground
+				if(wasGrounded && !Grounded && !InputScript.jump)
+					_verticalVelocity = _rb.velocity.y;
 			}
 			
 
