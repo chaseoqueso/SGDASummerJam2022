@@ -36,5 +36,7 @@ public class Collectible : MonoBehaviour
             CollectibleCounts.Add(type, 0);
 
         CollectibleCounts[type]++;
+
+        UIManager.instance.IncrementCollectibleCount(type, CollectibleCounts[type]);
     }
 }
