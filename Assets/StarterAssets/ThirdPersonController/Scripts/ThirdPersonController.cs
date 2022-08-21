@@ -91,6 +91,8 @@ namespace StarterAssets
 		[Tooltip("The parts of the model to disable while rolling")]
 		public List<GameObject> BodyParts;
 
+		[HideInInspector] public CameraManager _cameraScript;
+
 		// player
 		private float _animationBlend;
 		private float _targetRotation = 0.0f;
@@ -113,7 +115,6 @@ namespace StarterAssets
 		private Animator _animator;
 		private CharacterController _controller;
 		private BasicRigidBodyPush _rbPusher;
-		private CameraManager _cameraScript;
 		private GameObject _mainCamera;
 		private CapsuleCollider _collider;
 		private Rigidbody _rb;
@@ -182,6 +183,8 @@ namespace StarterAssets
 
 		public void SetVelocity(Vector3 velocity)
 		{
+			_rb.velocity = Vector3.zero;
+			_horizontalSpeed = Vector3.zero;
 			_bonusVelocity = new Vector3(velocity.x, 0, velocity.z);
 			_verticalVelocity = velocity.y;
 			_velocityAdded = true;

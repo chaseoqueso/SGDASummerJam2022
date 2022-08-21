@@ -40,10 +40,10 @@ public abstract class EnemyBase : MonoBehaviour
     [Header("Player Input")]
     [Tooltip("The script that provides the movement inputs to this controller.")]
     public StarterAssetsInputs InputScript;
+    [Tooltip("The script that manages the followPoint of the virtual camera.")]
+    [SerializeField] protected CameraManager _cameraScript;
 
     [HideInInspector] public EnemyState CurrentState;
-
-    protected CameraManager _cameraScript;
     protected GameObject _mainCamera;
     protected ThirdPersonController _player;
     protected Animator _animator;
@@ -55,8 +55,12 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected virtual void Awake()
     {
-        _cameraScript = GetComponent<CameraManager>();
         _animator = GetComponentInChildren<Animator>();
+
+        if(_cameraScript == null)
+        {
+            _cameraScript = GetComponent<CameraManager>();
+        }
         
         if (_mainCamera == null)
         {
@@ -234,7 +238,7 @@ public abstract class EnemyBase : MonoBehaviour
                 continue;
             }
 
-            if(hitObject.layer == LayerMask.NameToLayer("Player")) // If one of the hit objects was the player
+            if(hitObject.layer == LayerMask.NameToLayer("Player") && hitObject == StarterAssetsInputs.currentPlayerObject) // If one of the hit objects was the player
             {
                 Possess(StarterAssetsInputs.currentPlayerObject.GetComponent<ThirdPersonController>()); // Get possessed
             }
@@ -293,11 +297,16 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected virtual void Unpossess()
     {
+        // Set player camera direction
+        Vector3 cameraEulers = _mainCamera.transform.eulerAngles;
+        _player._cameraScript.SetCameraRotation(cameraEulers.y, 20);
+
         // Give the player control
         _player.TogglePlayerControl(true);
 
         // Update the current player
         StarterAssetsInputs.currentPlayerObject = _player.gameObject;
+        InputScript.canUseAbilities = false;
 
         // Kill the enemy
         Kill();

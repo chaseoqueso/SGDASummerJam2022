@@ -27,13 +27,13 @@ public class Broom : MobileEnemyBase
 
         if(hits.Length != 0)
         {
-            ThirdPersonController playerScript = hits[0].GetComponent<ThirdPersonController>();
+            ThirdPersonController _player = hits[0].GetComponent<ThirdPersonController>();
 
             // Force it into a roll and knock it away
-            playerScript.ForceRoll();
+            _player.ForceRoll();
             float currentKnockbackForce = IsPossessed() ? PossessedKnockbackForce : KnockbackForce;
             float currentKnockupForce = IsPossessed() ? PossessedKnockupForce : KnockupForce;
-            playerScript.AddVelocity(transform.forward * currentKnockbackForce + Vector3.up * currentKnockupForce);
+            _player.AddVelocity(transform.forward * currentKnockbackForce + Vector3.up * currentKnockupForce);
         }
     }
 }

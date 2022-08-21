@@ -69,7 +69,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4892833188236780155}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.5, z: 0}
+  m_LocalPosition: {x: 0, y: 3.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -149,6 +149,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   aggroRadius: 10
   leashRadius: 20
+  Ability1ReferenceHitbox: {fileID: 1419294460}
+  Ability2ReferenceHitbox: {fileID: 1419294460}
   minAttackDelay: 0.5
   maxAttackDelay: 0.75
   abilityRatio: 0.5
@@ -174,8 +176,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   FallTimeout: 0.05
-  Ability1ReferenceHitbox: {fileID: 1419294460}
-  Ability2ReferenceHitbox: {fileID: 1419294460}
   KnockbackForce: 15
   KnockupForce: 5
   PossessedKnockbackForce: 20
@@ -197,7 +197,7 @@ MonoBehaviour:
   TopClamp: 70
   BottomClamp: -30
   CameraAngleOverride: 0
-  WalkOffset: {x: 0, y: 2, z: 0}
+  WalkOffset: {x: 0, y: 3.5, z: 0}
   RollOffset: {x: 0, y: 0, z: 0}
   CameraPositionSeekSpeed: 1
   LockCameraPosition: 0
