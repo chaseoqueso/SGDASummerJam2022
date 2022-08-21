@@ -245,21 +245,17 @@ namespace StarterAssets
                 if (CurrentState == PlayerState.Rolling)
                 {
 					// Make sure we have enough space to get bigger
-					RaycastHit hit;
-					if(Physics.Raycast(PlayerHead.transform.position, Vector3.down, out hit, _controller.height, ObstacleLayers))
+					Vector3 bottomPoint = PlayerHead.transform.position - Vector3.up * PlayerHeadRadius;
+					Collider[] hits = Physics.OverlapCapsule(bottomPoint + (Vector3.up * _controller.radius), 
+															bottomPoint + (Vector3.up * _controller.height) - (Vector3.up * _controller.radius), 
+															_controller.radius, 
+															ObstacleLayers);
+					
+					if(hits.Length != 0)
 					{
-						Vector3 bottomPoint = hit.point + Vector3.up * 0.05f;
-						Collider[] hits = Physics.OverlapCapsule(bottomPoint + (Vector3.up * _controller.radius), 
-																 bottomPoint + (Vector3.up * _controller.height) - (Vector3.up * _controller.radius), 
-																 _controller.radius, 
-																 ObstacleLayers);
-						
-						if(hits.Length != 0)
-						{
-							// We don't fit so don't proceed to the rest of the method
-							InputScript.roll = false;
-							return;
-						}
+						// We don't fit so don't proceed to the rest of the method
+						InputScript.roll = false;
+						return;
 					}
 
                 	// If we are currently rolling, exit roll mode
