@@ -36,6 +36,8 @@ public class PauseMenu : MonoBehaviour
         pauseMenu.SetActive(true);
         Time.timeScale = 0;
 
+        pauseTopButton.GetComponent<UIButtonFixer>().SelectOnMenuSwitch();
+
         // ToggleSettings(false);
     }
 

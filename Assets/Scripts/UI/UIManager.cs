@@ -16,6 +16,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TMP_Text sweetsCount;
 
     [SerializeField] private GameObject counterUIPanel;
+    [SerializeField] private GameObject crosshairOverlay;
 
     [SerializeField] private PauseMenu pauseMenu;
 
@@ -27,6 +28,11 @@ public class UIManager : MonoBehaviour
         else{
             instance = this;
         }
+    }
+
+    public void ToggleCrosshairOverlay(bool set)
+    {
+        crosshairOverlay.SetActive(set);
     }
 
     public void IncrementCollectibleCount(CollectibleType type, int newValue)
