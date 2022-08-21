@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
 using UnityEngine.InputSystem;
 #endif
@@ -64,6 +65,20 @@ namespace StarterAssets
 			if(canUseAbilities)
 			{
 				Ability2Input(value.isPressed);
+			}
+		}
+
+		public void OnPause(InputValue value)
+		{
+			if(SceneManager.GetActiveScene().name != UIManager.GAME_SCENE_NAME){
+				return;
+			}
+
+			if(PauseMenu.GameIsPaused){
+				UIManager.instance.GetPauseMenu().ResumeGame();
+			}
+			else{
+				UIManager.instance.GetPauseMenu().PauseGame();
 			}
 		}
 #else
