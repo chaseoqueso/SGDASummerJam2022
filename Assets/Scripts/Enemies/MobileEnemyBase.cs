@@ -99,6 +99,10 @@ public abstract class MobileEnemyBase : EnemyBase
                 Move();
                 break;
 
+            case EnemyState.PossessedAttacking:
+                _horizontalSpeed = Vector3.zero;
+                break;
+
             case EnemyState.Aggro: // If aggro'd
                 Transform player = StarterAssetsInputs.currentPlayerObject.transform;
                 Vector3 towardsPlayer = player.position - transform.position;
