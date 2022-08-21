@@ -13,8 +13,8 @@ public class PauseMenu : MonoBehaviour
     [SerializeField] private GameObject pauseMenuPanel;
     [SerializeField] private Button pauseTopButton;
 
-    [SerializeField] private GameObject settingsMenuPanel;
-    [SerializeField] private Button settingsTopButton;
+    // [SerializeField] private GameObject settingsMenuPanel;
+    // [SerializeField] private Button settingsTopButton;
 
     // TODO: call PauseGame() wherever input is handled when the input button is clicked
 
@@ -36,14 +36,14 @@ public class PauseMenu : MonoBehaviour
         pauseMenu.SetActive(true);
         Time.timeScale = 0;
 
-        ToggleSettings(false);
+        // ToggleSettings(false);
     }
 
     public void ResumeGame()
     {
         UIManager.instance.HideCounterUI(false);
 
-        ToggleSettings(false);
+        // ToggleSettings(false);
 
         GameIsPaused = false;
         pauseMenu.SetActive(false);
@@ -52,11 +52,11 @@ public class PauseMenu : MonoBehaviour
 
     public void ToggleSettings(bool set)
     {
-        settingsMenuPanel.SetActive(set);
+        // settingsMenuPanel.SetActive(set);
         pauseMenuPanel.SetActive(!set);
 
         if(set){
-            settingsTopButton.GetComponent<UIButtonFixer>().SelectOnMenuSwitch();
+            // settingsTopButton.GetComponent<UIButtonFixer>().SelectOnMenuSwitch();
         }
         else{
             pauseTopButton.GetComponent<UIButtonFixer>().SelectOnMenuSwitch();
