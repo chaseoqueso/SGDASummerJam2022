@@ -13,6 +13,8 @@ public class SpookyTree : StationaryEnemyBase
     [SerializeField] protected float verticalThrowForce = 10f;
     [Tooltip("The force to throw objects while possessed.")]
     [SerializeField] protected float possessedThrowForce = 20f;
+    [Tooltip("The additional vertical force to apply to thrown objects while possessed.")]
+    [SerializeField] protected float possessedverticalThrowForce = 10f;
     [Tooltip("The object to parent grabbable objects to.")]
     [SerializeField] protected Transform handPosition;
     [Tooltip("The script that manages the followPoint of the aim camera.")]
@@ -134,7 +136,7 @@ public class SpookyTree : StationaryEnemyBase
         if(IsPossessed())
         {
             Unpossess();
-            _player.SetVelocity(_mainCamera.transform.forward * possessedThrowForce);
+            _player.SetVelocity(_mainCamera.transform.forward * possessedThrowForce + Vector3.up * possessedverticalThrowForce);
         }
         else
         {

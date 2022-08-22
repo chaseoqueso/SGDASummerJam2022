@@ -120,7 +120,7 @@ public abstract class EnemyBase : MonoBehaviour
         }
         else
         {
-            _cameraScript.SetCameraRotation(transform.eulerAngles.x, transform.eulerAngles.y);
+            _cameraScript.SetCameraRotation(transform.eulerAngles.y, transform.eulerAngles.x);
         }
     }
 

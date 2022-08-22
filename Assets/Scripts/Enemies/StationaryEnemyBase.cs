@@ -41,7 +41,10 @@ public abstract class StationaryEnemyBase : EnemyBase
     protected override void LateUpdate()
     {
         base.LateUpdate();
-        _cameraScript.CameraRotation(new Vector2(_currentRotationSpeed, 0));
+        if(IsPossessed())
+        {
+            _cameraScript.CameraRotation(new Vector2(_currentRotationSpeed, 0));
+        }
     }
 
     protected virtual void Move()
