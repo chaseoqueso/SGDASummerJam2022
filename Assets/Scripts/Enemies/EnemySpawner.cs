@@ -67,15 +67,19 @@ public class EnemySpawner : MonoBehaviour
     {
         _isSpawning = true;
         
-        _currentEnemy = Instantiate(EnemyPrefab, EnemyCreationParent.transform.position, transform.rotation, EnemyCreationParent).GetComponent<MobileEnemyBase>();
+        _currentEnemy = Instantiate(EnemyPrefab, EnemyCreationParent.position, transform.rotation, EnemyCreationParent).GetComponent<MobileEnemyBase>();
         _currentEnemy.Initialize(SpawnPoints[enemyIndex], this);
         _currentEnemy.enabled = false;
         _enemies[enemyIndex] = _currentEnemy;
 
         Animator.SetTrigger("SpawnEnemy");
 
-        yield return new WaitForEndOfFrame();
-        yield return new WaitUntil(() => Animator.GetCurrentAnimatorStateInfo(0).IsTag("Idle") && !Animator.GetBool("SpawnEnemy"));
+        while(!Animator.GetCurrentAnimatorStateInfo(0).IsTag("Idle") || Animator.GetBool("SpawnEnemy"))
+        {
+            if(_currentEnemy.transform.parent == EnemyCreationParent)
+                _currentEnemy.transform.position = EnemyCreationParent.position;
+            yield return null;
+        }
 
         _isSpawning = false;
         _canSpawn = false;
