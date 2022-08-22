@@ -29,7 +29,7 @@ namespace StarterAssets
 		[Tooltip("Whether this controller can accept input right now.")]
 		public bool AcceptInput = true;
 
-		[Header("Player")]
+		[Header("Walking")]
 		[Tooltip("Move speed of the character in m/s")]
 		public float MoveSpeed = 2.0f;
 		[Tooltip("Acceleration and deceleration")]
@@ -39,11 +39,13 @@ namespace StarterAssets
 		[Tooltip("The player's currentState.")]
 		public PlayerState CurrentState;
 		
-		[Space(10)]
+		[Header("Rolling")]
 		[Tooltip("Rolling speed of the character in m/s")]
 		public float RollSpeed = 2.0f;
 		[Tooltip("Acceleration and deceleration while rolling")]
 		public float RollingSpeedChangeRate = 6.0f;
+		[Tooltip("The rate to gain bonus velocity acquired from rolling down hills.")]
+		public float BonusSpeedGainRate = 1.0f;
 		[Tooltip("The rate to decay the bonus velocity acquired from rolling down hills.")]
 		public float BonusSpeedDecayRate = 2.0f;
 		[Tooltip("The maximum bonus velocity acquired from rolling down hills.")]
@@ -53,15 +55,17 @@ namespace StarterAssets
 		[Tooltip("The radius of the player's head object")]
 		public float PlayerHeadRadius;
 
-		[Space(10)]
+		[Header("Jumping")]
 		[Tooltip("The height the player can jump")]
 		public float JumpHeight = 1.2f;
+		[Tooltip("The height the player can jump while rolling")]
+		public float RollingJumpHeight = 1f;
 		[Tooltip("The character uses its own gravity value. The engine default is -9.81f")]
 		public float Gravity = -15.0f;
 		[Tooltip("Acceleration and deceleration in midair")]
 		public float AerialSpeedChangeRate = 3.0f;
 
-		[Space(10)]
+		[Header("Timing")]
 		[Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
 		public float JumpTimeout = 0.50f;
 		[Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
@@ -125,6 +129,7 @@ namespace StarterAssets
 
 		private bool _hasAnimator;
 		private bool _velocityAdded;
+		private bool _isGainingBonusVelocity;
 
 		private bool CanMove { get { return CurrentState != PlayerState.Immobile; }}
 
@@ -313,7 +318,8 @@ namespace StarterAssets
 				if (AcceptInput && InputScript.jump && _jumpTimeoutDelta <= 0.0f)
 				{
 					// the square root of H * -2 * G = how much velocity needed to reach desired height
-					_verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+					float height = CurrentState == PlayerState.Rolling ? RollingJumpHeight : JumpHeight;
+					_verticalVelocity = Mathf.Sqrt(height * -2f * Gravity);
 
 					// update animator if using character
 					if (_hasAnimator)
@@ -385,12 +391,16 @@ namespace StarterAssets
 							Vector3 totalVelocity = _horizontalSpeed + _bonusVelocity;
 							coplanarForce *= Mathf.InverseLerp(-1, 1, (Vector3.Dot(coplanarForce, totalVelocity)));
 
-							_bonusVelocity += coplanarForce;
+							Vector3 prevVelocity = _bonusVelocity;
+							_bonusVelocity += coplanarForce * BonusSpeedGainRate;
 
 							if(_bonusVelocity.magnitude > MaximumBonusSpeed)
 							{
 								_bonusVelocity = _bonusVelocity.normalized * MaximumBonusSpeed;
 							}
+
+							if(_bonusVelocity.magnitude > prevVelocity.magnitude)
+								_isGainingBonusVelocity = true;
 						}
 					}
 
@@ -490,8 +500,8 @@ namespace StarterAssets
 				}
 			}
 
-			_previousPosition = PlayerHead.transform.position;
 			_velocityAdded = false;
+			_previousPosition = PlayerHead.transform.position;
 		}
 
 		private void Move(float timeStep)
@@ -595,7 +605,7 @@ namespace StarterAssets
 				_rb.velocity = totalHorizontalVelocity + verticalSpeed;
 
 				// Decay bonus velocity
-				if(Grounded && _bonusVelocity != Vector3.zero)
+				if(Grounded && !_isGainingBonusVelocity && _bonusVelocity != Vector3.zero)
 				{
 					float newMagnitude = (_bonusVelocity.magnitude - BonusSpeedDecayRate * timeStep);
 					if(newMagnitude < 0)
@@ -607,6 +617,7 @@ namespace StarterAssets
 						_bonusVelocity = _bonusVelocity.normalized * newMagnitude;
 					}
 				}
+				_isGainingBonusVelocity = false;
 			}
 			else
 			{

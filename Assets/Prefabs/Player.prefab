@@ -84,7 +84,7 @@ CharacterController:
   serializedVersion: 2
   m_Height: 1.5
   m_Radius: 0.5
-  m_SlopeLimit: 45
+  m_SlopeLimit: 45.01
   m_StepOffset: 0.25
   m_SkinWidth: 0.02
   m_MinMoveDistance: 0
@@ -109,11 +109,13 @@ MonoBehaviour:
   CurrentState: 0
   RollSpeed: 13
   RollingSpeedChangeRate: 20
-  BonusSpeedDecayRate: 5
+  BonusSpeedGainRate: 0.5
+  BonusSpeedDecayRate: 4
   MaximumBonusSpeed: 10
   PlayerHead: {fileID: 2406775303628015353}
   PlayerHeadRadius: 0.5
   JumpHeight: 2
+  RollingJumpHeight: 1
   Gravity: -25
   AerialSpeedChangeRate: 15
   JumpTimeout: 0

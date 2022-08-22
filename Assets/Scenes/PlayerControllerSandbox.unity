@@ -3336,6 +3336,14 @@ PrefabInstance:
       propertyPath: InputScript
       value: 
       objectReference: {fileID: 442067881}
+    - target: {fileID: 4313470006470053243, guid: bff86167821fac64482efc831eee094e, type: 3}
+      propertyPath: BonusSpeedGainRate
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4313470006470053243, guid: bff86167821fac64482efc831eee094e, type: 3}
+      propertyPath: BonusSpeedDecayRate
+      value: 4
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bff86167821fac64482efc831eee094e, type: 3}
 --- !u!1001 &4615022721580513665
