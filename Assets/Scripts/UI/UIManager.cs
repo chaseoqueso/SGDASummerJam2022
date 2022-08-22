@@ -9,7 +9,7 @@ public class UIManager : MonoBehaviour
     public static UIManager instance;
 
     public const string MAIN_MENU_SCENE_NAME = "Main Menu";
-    public const string GAME_SCENE_NAME = "NicksTest";  // NOTE: UPDATE THIS AT THE END IF NECESSARY
+    public const string GAME_SCENE_NAME = "Playground";  // NOTE: UPDATE THIS AT THE END IF NECESSARY
     public const string WIN_SCENE_NAME = "WinScene";
 
     [SerializeField] private TMP_Text candleCount;
