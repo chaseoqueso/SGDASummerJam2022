@@ -144,6 +144,12 @@ public class SpookyTree : StationaryEnemyBase
         }
     }
 
+    protected override void Unpossess()
+    {
+        base.Unpossess();
+        _aimCameraScript.TogglePlayerCamera(false);
+    }
+
     public override void Kill()
     {
         // Don't destroy the tree, unpossess it instead

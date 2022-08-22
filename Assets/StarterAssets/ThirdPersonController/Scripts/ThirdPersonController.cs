@@ -188,7 +188,6 @@ namespace StarterAssets
 
 		public void SetVelocity(Vector3 velocity)
 		{
-			_rb.velocity = Vector3.zero;
 			_horizontalSpeed = Vector3.zero;
 			_bonusVelocity = new Vector3(velocity.x, 0, velocity.z);
 			_verticalVelocity = velocity.y;

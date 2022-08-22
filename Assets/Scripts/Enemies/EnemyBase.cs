@@ -310,6 +310,7 @@ public abstract class EnemyBase : MonoBehaviour
 
         // Reset enemy
         TransitionState(CurrentState, EnemyState.Idle);
+        _cameraScript.TogglePlayerCamera(false);
     }
 
     public virtual void Kill()
