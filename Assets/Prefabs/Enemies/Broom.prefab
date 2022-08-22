@@ -179,7 +179,7 @@ MonoBehaviour:
   FallTimeout: 0.05
   KnockbackForce: 15
   KnockupForce: 5
-  PossessedKnockbackForce: 25
+  PossessedKnockbackForce: 20
   PossessedKnockupForce: 15
 --- !u!114 &4892833188912340026
 MonoBehaviour:
