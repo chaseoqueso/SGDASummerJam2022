@@ -154,7 +154,6 @@ namespace StarterAssets
 			_cameraScript = GetComponent<CameraManager>();
 
 			_collider.radius = PlayerHeadRadius;
-			_collider.height = 0;
 			_collider.isTrigger = true;
 			_rb.detectCollisions = false;
 
@@ -189,6 +188,13 @@ namespace StarterAssets
 		public void SetVelocity(Vector3 velocity)
 		{
 			_horizontalSpeed = Vector3.zero;
+			_bonusVelocity = new Vector3(velocity.x, 0, velocity.z);
+			_verticalVelocity = velocity.y;
+			_velocityAdded = true;
+		}
+
+		public void SetBonusVelocity(Vector3 velocity)
+		{
 			_bonusVelocity = new Vector3(velocity.x, 0, velocity.z);
 			_verticalVelocity = velocity.y;
 			_velocityAdded = true;
@@ -290,9 +296,6 @@ namespace StarterAssets
 		{
 			if (Grounded)
 			{
-				// reset the fall timeout timer
-				_fallTimeoutDelta = FallTimeout;
-
 				// update animator if using character
 				if (_hasAnimator)
 				{
@@ -621,7 +624,7 @@ namespace StarterAssets
 			else
 			{
 				Vector3 movement = (_horizontalSpeed + new Vector3(0.0f, _verticalVelocity, 0.0f)) * timeStep;
-        		_rbPusher.PushRigidBodies(movement);
+        		_rbPusher.PushRigidBodies(movement, RBPushUpdateMode.Update);
 				_controller.Move(movement);
 			}
 
@@ -741,11 +744,11 @@ namespace StarterAssets
 			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
 			if(CurrentState == PlayerState.Rolling)
 			{
-				Gizmos.DrawSphere(new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y - RollingGroundedDistance, PlayerHead.transform.position.z), RollingGroundedRadius);
+				Gizmos.DrawSphere(new Vector3(PlayerHead.transform.position.x, PlayerHead.transform.position.y + RollingGroundedDistance, PlayerHead.transform.position.z), RollingGroundedRadius);
 			}
 			else
 			{
-				Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedDistance, transform.position.z), GroundedRadius);
+				Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y + PlayerHeadRadius - GroundedDistance, transform.position.z), GroundedRadius);
 			}
 		}
 	}

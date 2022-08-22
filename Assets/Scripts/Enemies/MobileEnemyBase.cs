@@ -159,14 +159,6 @@ public abstract class MobileEnemyBase : EnemyBase
         }
     }
 
-    protected virtual void FixedUpdate()
-    {
-        if(IsPossessed())
-        {
-            _rbPusher.PushRigidBodies(_horizontalSpeed * Time.fixedDeltaTime);
-        }
-    }
-
     protected void GroundedCheck()
     {
         Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
@@ -208,6 +200,7 @@ public abstract class MobileEnemyBase : EnemyBase
 
         // move the player
         Vector3 movement = (_horizontalSpeed + new Vector3(0.0f, _verticalVelocity, 0.0f)) * Time.deltaTime;
+        _rbPusher.PushRigidBodies(_horizontalSpeed * Time.fixedDeltaTime + Vector3.up * _verticalVelocity, RBPushUpdateMode.Update);
         _controller.Move(movement);
 
         // if the player is moving, face the player in the direction they're moving

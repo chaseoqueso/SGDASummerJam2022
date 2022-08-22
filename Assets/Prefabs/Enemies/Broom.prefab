@@ -219,7 +219,11 @@ MonoBehaviour:
   pushLayers:
     serializedVersion: 2
     m_Bits: 8
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 1
   canPush: 1
+  _updateMode: 0
 --- !u!195 &4892833188912340029
 NavMeshAgent:
   m_ObjectHideFlags: 0
