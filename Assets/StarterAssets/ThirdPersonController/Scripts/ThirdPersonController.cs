@@ -75,7 +75,7 @@ namespace StarterAssets
 		[Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
 		public bool Grounded = true;
 		[Tooltip("Useful for rough ground")]
-		public float GroundedOffset = -0.25f;
+		public float GroundedDistance = -0.25f;
 		[Tooltip("The radius of the grounded check. Should generally match the radius of the CharacterController")]
 		public float GroundedRadius = 0.5f;
 		[Tooltip("The distance to sphereCast while rolling")]
@@ -396,7 +396,7 @@ namespace StarterAssets
 
 					// Only consider this ground if it's within the slope limit
 					bool wasGrounded = Grounded;
-					Grounded = Vector3.Angle(Vector3.up, hit.normal) < _controller.slopeLimit;
+					Grounded = Vector3.Angle(Vector3.up, hit.normal) <= _controller.slopeLimit;
 
 					// Update the ground normal
 					if(Grounded)
@@ -435,8 +435,15 @@ namespace StarterAssets
 
 				bool wasGrounded = Grounded;
 
-				Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
-				Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
+				RaycastHit hit;
+				if(Physics.SphereCast(transform.position + Vector3.up * GroundedRadius, GroundedRadius, Vector3.down, out hit, GroundedDistance, GroundLayers))
+				{
+					Grounded = Vector3.Angle(Vector3.up, hit.normal) <= _controller.slopeLimit;
+				}
+				else
+				{
+					Grounded = false;
+				}
 
 				// If we walked off an edge, set our vertical velocity to a value that won't spike us into the ground
 				if(wasGrounded && !Grounded && !InputScript.jump)
@@ -626,8 +633,18 @@ namespace StarterAssets
 		{
 			CurrentState = PlayerState.Rolling;
 
-			// Transfer all velocity into the rigidbody
-			_rb.velocity = _controller.velocity;
+			// Check if we're on a slope that's too steep
+			RaycastHit hit;
+			if(!Grounded && Physics.SphereCast(transform.position + Vector3.up * GroundedRadius, GroundedRadius, Vector3.down, out hit, GroundedDistance, GroundLayers))
+			{
+				_verticalVelocity = 0;
+				_rb.velocity = new Vector3(_controller.velocity.x, 0, _controller.velocity.z);
+			}
+			else
+			{
+				// Transfer all velocity into the rigidbody
+				_rb.velocity = _controller.velocity;
+			}
 
 			// Disable the ghost body
 			foreach (GameObject model in BodyParts)
@@ -718,7 +735,7 @@ namespace StarterAssets
 			}
 			else
 			{
-				Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
+				Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedDistance, transform.position.z), GroundedRadius);
 			}
 		}
 	}

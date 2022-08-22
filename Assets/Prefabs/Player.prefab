@@ -121,8 +121,8 @@ MonoBehaviour:
   RollTimeout: 0.5
   RollExitTime: 0.15
   Grounded: 1
-  GroundedOffset: -0.42
-  GroundedRadius: 0.45
+  GroundedDistance: 0.1
+  GroundedRadius: 0.49
   RollingGroundedDistance: 0.1
   RollingGroundedRadius: 0.45
   GroundLayers:
@@ -135,6 +135,7 @@ MonoBehaviour:
   - {fileID: 3033826441790226152}
   - {fileID: 848023790579799622}
   - {fileID: 8906591712467511189}
+  _cameraScript: {fileID: 0}
 --- !u!114 &4923491595305467664
 MonoBehaviour:
   m_ObjectHideFlags: 0
