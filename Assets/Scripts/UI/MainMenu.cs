@@ -22,6 +22,8 @@ public class MainMenu : MonoBehaviour
 
     public void Play()
     {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
         SceneManager.LoadScene(UIManager.GAME_SCENE_NAME);
     }
 
