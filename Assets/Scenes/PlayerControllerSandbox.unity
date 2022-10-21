@@ -3087,9 +3087,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2772917647111936399, guid: 75ef0c9614edb84479c749e21bbffeee, type: 3}
+      propertyPath: SwitchTargets.Array.data[0]
+      value: 
+      objectReference: {fileID: 310614282}
     - target: {fileID: 3331366508662621790, guid: 75ef0c9614edb84479c749e21bbffeee, type: 3}
       propertyPath: m_RootOrder
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3331366508662621790, guid: 75ef0c9614edb84479c749e21bbffeee, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -16.99
+      objectReference: {fileID: 0}
+    - target: {fileID: 3331366508662621790, guid: 75ef0c9614edb84479c749e21bbffeee, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 17.36
       objectReference: {fileID: 0}
     - target: {fileID: 7333080389077264708, guid: 75ef0c9614edb84479c749e21bbffeee, type: 3}
       propertyPath: m_Name
@@ -5785,7 +5797,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3501362555228739530, guid: bff86167821fac64482efc831eee094e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -5.16
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3501362555228739530, guid: bff86167821fac64482efc831eee094e, type: 3}
       propertyPath: m_LocalPosition.y
@@ -5793,7 +5805,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3501362555228739530, guid: bff86167821fac64482efc831eee094e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 18.03
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3501362555228739530, guid: bff86167821fac64482efc831eee094e, type: 3}
       propertyPath: m_LocalRotation.w
@@ -6015,6 +6027,18 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2772917647111936399, guid: 75ef0c9614edb84479c749e21bbffeee, type: 3}
+      propertyPath: SwitchTargets.Array.data[0]
+      value: 
+      objectReference: {fileID: 420302217}
+    - target: {fileID: 3331366508662621790, guid: 75ef0c9614edb84479c749e21bbffeee, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -20.77
+      objectReference: {fileID: 0}
+    - target: {fileID: 3331366508662621790, guid: 75ef0c9614edb84479c749e21bbffeee, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 28.64
+      objectReference: {fileID: 0}
     - target: {fileID: 7333080389077264708, guid: 75ef0c9614edb84479c749e21bbffeee, type: 3}
       propertyPath: m_Name
       value: Button
